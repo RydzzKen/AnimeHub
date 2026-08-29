@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <script src="csrf.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07070a">
+    <title>AnimeHub - Profile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #0d0e12;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            padding: 15px;
+            padding-bottom: 80px;
+            display: flex;
+            justify-content: center;
+        }
+        .container { width: 100%; max-width: 800px; }
+
+        /* HEADER */
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            background: #1a1c23;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        .back-btn {
+            color: #fff;
+            font-size: 20px;
+            text-decoration: none;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+        .back-btn:hover { background: #333; }
+        .brand-name { font-size: 18px; font-weight: bold; }
+        .brand-name span { color: #ff4757; }
+
+        /* KARTU PROFIL */
+        .profile-card {
+            background: #1a1c23;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+        .profile-banner {
+            width: 100%;
+            height: 140px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            background-color: #333;
+        }
+        .profile-avatar-wrapper {
+            position: absolute;
+            bottom: -40px;
+            left: 20px;
+        }
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid #1a1c23;
+            object-fit: cover;
+            background: #000;
+        }
+        .profile-body { padding: 50px 20px 20px 20px; }
+        .profile-names h3 { font-size: 20px; color: #fff; }
+        .profile-names small { color: #888; font-size: 13px; }
+        .profile-bio {
+            background: #0d0e12;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 13px;
+            color: #ccc;
+            border: 1px solid #252830;
+        }
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center;
+            background: #0d0e12;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 12px 0;
+        }
+        .stat-item h4 { color: #ff4757; font-size: 16px; }
+        .stat-item p { font-size: 11px; color: #aaa; }
+
+        /* BOTTOM NAV */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #333;
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #888;
+            text-decoration: none !important;
+            font-size: 11px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .nav-item i { font-size: 18px; margin-bottom: 3px; }
+        .nav-item.active { color: #ff4757; }
+        .nav-item:hover { color: #ff4757; }
+        
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+/* Tambahkan di dalam tag style */
+.logo-img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+.brand-name {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 18px;
+    font-weight: bold;
+}
+    </style>
+</head>
+<body>
+
+<div class="container">
+   
+<header class="app-header">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <div class="brand-name">
+            <img src="Logo.png" alt="Logo" class="logo-img">
+            ANIME<span>HUB</span>
+        </div>
+    </div>
+    <div style="flex:1;"></div>
+    <span style="color:#888; font-size:12px;"></span>
+</header>
+
+    <!-- KARTU PROFIL -->
+    <div class="profile-card" id="profile-card">
+        <div class="profile-banner" id="p-banner-bg" style="background-image: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800');">
+            <div class="profile-avatar-wrapper">
+                <img id="p-avatar-img" class="profile-avatar" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10" alt="Avatar">
+            </div>
+        </div>
+        <div class="profile-body">
+            <div class="profile-names">
+                <h3 id="p-displayName">Display Name</h3>
+                <small id="p-username">@username</small>
+            </div>
+            <div class="profile-bio" id="p-bio">Belum ada bio profile.</div>
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <h4 id="p-level">Lvl 1</h4>
+                    <p>Level</p>
+                </div>
+                <div class="stat-item">
+                    <h4 id="p-rank">Otaku</h4>
+                    <p>Rank</p>
+                </div>
+                <div class="stat-item">
+                    <h4 id="p-xp">0 XP</h4>
+                    <p>Exp</p>
+                </div>
+            </div>
+            <button onclick="logout()" style="width:100%; padding:12px; background:#ff4757; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:10px;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+    </a>
+    <a href="schedule.html" class="nav-item">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Schedule</span>
+    </a>
+    <a href="catalog.html" class="nav-item">
+        <i class="fas fa-book"></i>
+        <span>Catalog</span>
+    </a>
+    <a href="library.html" class="nav-item">
+        <i class="fas fa-bookmark"></i>
+        <span>Library</span>
+    </a>
+    <a href="profile.html" class="nav-item active">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<script>
+    // Ambil data user dari session
+    const userData = JSON.parse(localStorage.getItem('userSession'));
+
+    if (!userData) {
+        // Jika belum login, arahkan ke index
+        window.location.href = 'index.html';
+    }
+
+    function getRankTitle(lvl) {
+    if (lvl < 20) return "Otaku Pemula";
+    if (lvl < 50) return "Siswa Akademi";
+    if (lvl < 100) return "Wibu Elite";
+    if (lvl < 200) return "Pembaca Manga";
+    if (lvl < 350) return "Wibu Legend";
+    if (lvl < 500) return "Pakar Lore";
+    if (lvl < 750) return "Absolute Wibu";
+    if (lvl < 1000) return "Tetua Anime";
+    if (lvl < 1500) return "Suhu Isekai";
+    if (lvl < 2000) return "Lord Wibu";
+    if (lvl < 3000) return "Raja Chunibyo";
+    if (lvl < 5000) return "Dewa Otaku";
+    if (lvl < 7500) return "Kaisar Anime";
+    if (lvl < 10000) return "Entitas 2D";
+    if (lvl < 15000) return "Sovereign Wibu";       
+    if (lvl < 20000) return "Archon Anime";
+    if (lvl < 35000) return "Mitos Otaku";          
+    if (lvl < 50000) return "Transcendent Wibu";
+    if (lvl < 75000) return "Overlord Anime";       
+    if (lvl < 100000) return "Omnipresent Wibu";
+    if (lvl < 150000) return "Deity of Anime";      
+    if (lvl < 200000) return "Cosmic Otaku";
+    return "Anime Sovereign";
+    }
+
+    function renderProfile() {
+        const user = userData;
+        document.getElementById('p-displayName').innerText = user.displayName || user.username;
+        document.getElementById('p-username').innerText = '@' + user.username;
+        document.getElementById('p-bio').innerText = user.bio || 'Belum ada bio profile.';
+        document.getElementById('p-avatar-img').src = user.avatar || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10';
+        document.getElementById('p-banner-bg').style.backgroundImage = `url('${user.banner || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800'}')`;
+        document.getElementById('p-level').innerText = 'Lvl ' + (user.level || 1);
+        document.getElementById('p-rank').innerText = getRankTitle(user.level || 1);
+        document.getElementById('p-xp').innerText = (user.xp || 0) + ' XP';
+    }
+
+    function logout() {
+        // FIX: also end the server session (CSRF token is auto-attached by public/csrf.js)
+        fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            .catch(() => {})
+            .finally(() => {
+                localStorage.removeItem('userSession');
+                window.location.href = 'index.html';
+            });
+    }
+
+    renderProfile();
+</script>
+
+</body>
+</html>

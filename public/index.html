@@ -1,0 +1,2727 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <script src="csrf.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimeHub - Stream Anime Gratis</title>
+
+    <!-- TAG KHUSUS PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: #0d0e12; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 800px; }
+        
+        /* HEADER */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #1a1c23;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+
+        .brand-logo { display: flex; align-items: center; gap: 10px; }
+        .brand-name { font-size: 18px; font-weight: bold; color: #fff; letter-spacing: 0.5px; }
+        .brand-name span { color: #ff4757; }
+        .custom-logo { width: 38px; height: 38px; object-fit: contain; border-radius: 8px; }
+
+        /* LEVEL CARD DI POJOK KANAN */
+        .level-card {
+            display: flex; align-items: center; gap: 12px; cursor: pointer;
+            background: #0d0e12; padding: 6px 12px; border-radius: 30px;
+            border: 1px solid #333; transition: transform 0.2s, border-color 0.2s;
+        }
+        .level-card:hover { border-color: #ff4757; transform: translateY(-2px); }
+
+        .user-mini-profile { display: flex; align-items: center; gap: 10px; }
+        .mini-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #ff4757; }
+        .user-info-text { display: flex; flex-direction: column; }
+        .user-info-text b { font-size: 13px; color: #fff; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .user-info-text small { font-size: 10px; color: #ff4757; font-weight: bold; }
+
+        .progress-bar-bg { background: rgba(255, 255, 255, 0.1); height: 4px; border-radius: 2px; overflow: hidden; margin-top: 3px; width: 60px; }
+        .progress-bar-fill { background: #2ed573; height: 100%; width: 0%; transition: width 0.3s; }
+
+        /* MODAL AUTH */
+        /* OVERLAY MODAL */
+.auth-overlay { 
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%; 
+  background: rgba(0,0,0,0.85); 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  z-index: 9999; 
+}
+
+/* BOX NEON BERPUTAR */
+.neon-box {
+  position: relative;
+  width: 90%;
+  max-width: 450px;
+  min-height: 340px;
+  background: #121826;
+  border-radius: 16px;
+  overflow: hidden;
+  container-type: size;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.neon-box::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 170cqmax;
+  height: 170cqmax;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 36deg,
+    #35eaff 36deg 48deg,
+    transparent 48deg 126deg,
+    #ff0a6c 126deg 138deg,
+    transparent 138deg 216deg,
+    #35eaff 216deg 228deg,
+    transparent 228deg 306deg,
+    #ff0a6c 306deg 318deg,
+    transparent 318deg 360deg
+  );
+  filter: blur(1px) drop-shadow(0 0 12px #35eaff);
+  animation: neon-rotate 5s linear infinite;
+}
+
+.neon-box::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  background: #121826;
+  border-radius: 12px;
+  z-index: 1;
+}
+
+@keyframes neon-rotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* FORM STYLING */
+.neon-form {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 0 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.neon-form h2 {
+  color: #fff;
+  text-align: center;
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+
+.neon-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.neon-input-group label {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.neon-input-group input {
+  padding: 10px 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #fff;
+  outline: none;
+  width: 100%;
+}
+
+.neon-input-group input:focus {
+  border-color: #35eaff;
+  box-shadow: 0 0 8px rgba(53, 234, 255, 0.4);
+}
+
+.btn-neon {
+  margin-top: 6px;
+  padding: 10px;
+  background: linear-gradient(90deg, #ff0a6c, #35eaff);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.neon-footer {
+  text-align: center;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.neon-footer span {
+  color: #35eaff;
+  cursor: pointer;
+  font-weight: bold;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+
+.neon-footer span:hover {
+  color: #ff0a6c;
+  text-shadow: 0 0 6px rgba(255, 10, 108, 0.6);
+  text-decoration: underline;
+}
+
+        .auth-toggle { font-size:12px; margin-top:15px; color:#aaa; cursor:pointer; text-decoration:underline; }
+
+        /* MODAL PROFILE VIEW */
+        .profile-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 9998; padding: 15px; }
+        .profile-card-box { background: #1a1c23; width: 100%; max-width: 450px; border-radius: 16px; overflow: hidden; border: 1px solid #333; position: relative; max-height: 90vh; overflow-y: auto; }
+        .profile-banner { width: 100%; height: 120px; background-size: cover; background-position: center; position: relative; background-color: #333; }
+        .profile-avatar-wrapper { position: absolute; bottom: -35px; left: 20px; }
+        .profile-avatar { width: 75px; height: 75px; border-radius: 50%; border: 4px solid #1a1c23; object-fit: cover; background: #000; }
+        .profile-body { padding: 45px 20px 20px 20px; }
+        .profile-names h3 { font-size: 20px; color: #fff; margin-bottom: 2px; }
+        .profile-names small { color: #888; font-size: 12px; }
+        .profile-bio { background: #0d0e12; padding: 10px; border-radius: 8px; margin: 12px 0; font-size: 13px; color: #ccc; border: 1px solid #252830; }
+        .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; margin: 15px 0; background: #0d0e12; padding: 12px; border-radius: 10px; }
+        .stat-item h4 { color: #ff4757; font-size: 16px; }
+        .stat-item p { font-size: 11px; color: #aaa; }
+
+        /* FORM EDIT PROFILE */
+        .edit-profile-form { display: none; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
+        .edit-profile-form label { font-size: 11px; color: #aaa; display: block; margin-top: 10px; text-align: left; }
+        .edit-profile-form input[type="text"], .edit-profile-form textarea { width: 100%; padding: 8px; margin-top: 4px; border-radius: 6px; border: 1px solid #333; background: #0d0e12; color: #fff; font-size: 12px; }
+        .edit-profile-form input[type="file"] { width: 100%; padding: 6px; margin-top: 4px; border-radius: 6px; background: #0d0e12; color: #aaa; font-size: 11px; border: 1px solid #333; cursor: pointer; }
+        .btn-profile { width: 100%; padding: 10px; background: #ff4757; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 13px; }
+        .btn-edit-toggle { background: #333; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; float: right; }
+
+        /* PLAYER & KATALOG */
+        .player-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* Rasio 16:9 */
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #000;
+            margin-bottom: 15px;
+        }
+
+        .player-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* PLACEHOLDER STANDBY SCREEN */
+        .player-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1c23 0%, #0d0e12 100%);
+            border: 1px dashed #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border-radius: 12px;
+        }
+
+        .placeholder-content { padding: 20px; }
+
+        .play-btn-icon {
+            font-size: 32px;
+            color: #ff4757;
+            margin-bottom: 10px;
+            background: rgba(255, 71, 87, 0.1);
+            width: 60px;
+            height: 60px;
+            line-height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 12px auto;
+            border: 1px solid #ff4757;
+        }
+
+        .placeholder-content h3 { font-size: 16px; color: #fff; margin-bottom: 4px; }
+        .placeholder-content p { font-size: 12px; color: #888; }
+        
+        .anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
+        .anime-card { background: #1a1c23; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative; }
+        .anime-card:hover { border-color: #ff4757; }
+        .anime-card img { width: 100%; height: 180px; object-fit: cover; }
+        .anime-info { padding: 10px; }
+        .season-badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.8); font-size: 11px; padding: 3px 8px; border-radius: 4px; color: #ff4757; border: 1px solid #ff4757; }
+
+        /* MODAL DETAIL ANIME */
+        .modal-detail { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 999; padding: 15px; overflow-y: auto; }
+        .modal-content { background: #1a1c23; width: 100%; max-width: 600px; border-radius: 12px; padding: 20px; border: 1px solid #333; position: relative; max-height: 90vh; overflow-y: auto; }
+        .close-btn { position: absolute; top: 12px; right: 15px; font-size: 22px; background: none; border: none; color: #fff; cursor: pointer; z-index: 10; }
+        .anime-detail-header { display: flex; gap: 15px; margin-bottom: 15px; }
+        .anime-detail-header img { width: 100px; height: 140px; object-fit: cover; border-radius: 8px; }
+        .anime-detail-info h2 { color: #ff4757; margin-bottom: 5px; font-size: 18px; }
+        .genre-tag { display: inline-block; background: #333; font-size: 11px; padding: 3px 8px; border-radius: 4px; margin-right: 5px; margin-top: 5px; color: #2ed573; }
+        .synopsis { font-size: 13px; color: #ccc; margin-bottom: 20px; line-height: 1.4; background: #0d0e12; padding: 10px; border-radius: 6px; }
+        .episodes-title { font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; color: #ff4757; }
+        .episode-list { display: flex; flex-direction: column; gap: 8px; }
+        .episode-item { background: #0d0e12; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid #252830; }
+        .episode-item:hover { border-color: #ff4757; background: #1f222b; }
+        .play-icon { background: #ff4757; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; }
+
+        /* PANEL ADMIN */
+        .admin-panel { background: #1a1c23; border-radius: 8px; padding: 15px; margin-top: 25px; border: 1px solid #ff4757; display: none; }
+        .admin-panel h3 { color: #ff4757; margin-bottom: 10px; }
+        .btn-logout { background: #ff4757; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; }
+        
+        /* BANNER SLIDER STYLES */
+.banner-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #000;
+}
+
+.slider-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.5s ease-in-out;
+}
+
+.slide {
+    min-width: 100%;
+    height: 100%;
+}
+
+.slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Tombol Manual Prev & Next */
+.slider-btn {
+    display: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: none;
+    font-size: 7px;
+    padding: 6px 9px;
+    cursor: pointer;
+    border-radius: 50%;
+    z-index: 5;
+    transition: background 0.3s;
+}
+
+.slider-btn:hover {
+    background: #808080;
+}
+
+.prev-btn { left: 10px; }
+.next-btn { right: 10px; }
+
+/* Indikator Dots */
+.slider-dots {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 5;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+}
+
+.dot.active {
+    background: #ff4757;
+    transform: scale(1.2);
+}
+        /* 1. Memberi ruang di bawah agar konten utama tidak tertutup navbar */
+body {
+    padding-bottom: 70px;
+}
+
+/* 2. Container untuk Bottom Navigation Bar */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background-color: #1a1a1a; /* Sesuaikan dengan warna tema aplikasimu */
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid #333;
+    z-index: 1000;
+}
+
+/* 3. Tampilan untuk masing-masing tombol/ikon navigasi */
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #888;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.nav-item i {
+    font-size: 18px;
+    margin-bottom: 3px;
+}
+
+/* Tampilan saat menu sedang aktif */
+.nav-item.active {
+    color: #ff4757; /* Warna aksen/merah */
+}
+
+/* 4. Grid untuk menampilkan daftar poster di Halaman History */
+.anime-grid { 
+    display: grid; 
+    /* Mengatur grid menjadi 2 kolom sama besar ke samping */
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 15px; 
+    padding-bottom: 10px;
+}
+
+/* Memastikan poster menyesuaikan ukuran kartu yang lebih besar */
+.anime-card img {
+    width: 100%;
+    height: 180px; /*sebelum nya 220px*/
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.history-card {
+    background: #222;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.history-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+}
+
+.history-card-info {
+    padding: 6px;
+    font-size: 11px;
+    color: #fff;
+}
+/* Menghapus garis bawah untuk SEMUA elemen link <a> di dalam bottom-nav */
+.bottom-nav a {
+    text-decoration: none !important; /* !important memastikan aturan ini tidak tertimpa CSS lain */
+}
+
+/* Mengatur gaya navigasi agar rapi */
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #888;
+    text-decoration: none !important; /* Menghapus garis bawah */
+    font-size: 11px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+/* Memastikan garis bawah TETAP HILANG saat hover (disorot) atau active (diakses) */
+.nav-item:hover, 
+.nav-item:focus, 
+.nav-item:active, 
+.nav-item.active {
+    text-decoration: none !important;
+    color: #ff4757; /* Warna saat aktif/hover */
+}
+/* Container Utama untuk Genre (Termasuk Judul & Scroll Area) */
+.genre-section-wrapper {
+    background: #12141a; /* Warna latar kartu dibuat lebih gelap */
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: 1px solid #232733;
+    margin-bottom: 15px;
+}
+
+/* Judul Genre (Bukan Button) */
+.genre-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 10px;
+}
+
+/* Container pembungkus tombol genre yang bisa digeser */
+.genre-scroll-container {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch; /* Scroll mulus di iOS */
+    scrollbar-width: none; /* Sembunyikan scrollbar di Firefox */
+}
+
+.genre-scroll-container::-webkit-scrollbar {
+    display: none; /* Sembunyikan scrollbar di Chrome/Safari */
+}
+
+/* Styling Tombol Chip Genre */
+.genre-chip {
+    display: inline-block;
+    padding: 6px 14px;
+    background: #1a1c23; /* Latar tombol sedikit kontras */
+    color: #ff4757; /* Ubah warna tulisan tombol menjadi MERAH */
+    border: 1px solid #12141a; /* Garis tepi merah */
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+/* Tampilan saat chip genre Aktif atau Di-hover */
+.genre-chip.active, 
+.genre-chip:hover {
+    background: #ff4757; /* Latar berubah jadi merah saat dipilih */
+    color: #ffffff; /* Tulisan berubah putih saat aktif */
+    border-color: #ff4757;
+}
+/* TABEL BANNED LIST */
+.banned-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+.banned-table th {
+    background: #ff4757;
+    color: #fff;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.banned-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+    color: #ccc;
+}
+
+.banned-table tr:hover td {
+    background: #1f222b;
+}
+
+/* BADGE STATUS */
+.status-badge {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.status-badge.banned {
+    background: #ff4757;
+    color: #fff;
+}
+
+.status-badge.suspended {
+    background: #eccc68;
+    color: #000;
+}
+
+.status-badge.expired {
+    background: #2ed573;
+    color: #000;
+}
+
+.admin-tab-btn {
+    background: #1a1c23;
+    color: #888;
+    border: 1px solid #333;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.admin-tab-btn.active {
+    background: #ff4757;
+    color: #fff;
+    border-color: #ff4757;
+}
+
+.admin-tab-btn:hover:not(.active) {
+    border-color: #ff4757;
+    color: #fff;
+}
+/* BIKIN TABEL BISA DI-SCROLL HORIZONTAL DI HP */
+.banned-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 10px;
+    border-radius: 8px;
+}
+
+.banned-table {
+    width: 100%;
+    min-width: 600px; /* Biar kolom gak sesak */
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.banned-table th,
+.banned-table td {
+    padding: 8px 10px;
+    text-align: left;
+    white-space: nowrap; /* Biar teks gak turun */
+}
+
+.banned-table th {
+    background: #ff4757;
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.banned-table td {
+    border-bottom: 1px solid #333;
+    color: #ccc;
+}
+
+.banned-table tr:hover td {
+    background: #1f222b;
+}
+
+/* BADGE STATUS */
+.status-badge {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: bold;
+    display: inline-block;
+    white-space: nowrap;
+}
+    </style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN TECH STYLE -->
+<div id="splash-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d0e12; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; transition: opacity 0.5s ease; font-family: monospace;">
+    <img src="logo.png" alt="Logo" style="width: 90px; height: 90px; object-fit: contain; border-radius: 20px; margin-bottom: 15px; animation: pulse 1.5s infinite; box-shadow: 0 0 20px rgba(255, 71, 87, 0.3);">
+    <h1 style="color: #fff; font-size: 22px; font-weight: bold; letter-spacing: 1px; font-family: 'Segoe UI', sans-serif;">ANIME<span style="color: #ff4757;">HUB</span></h1>
+    <div style="width: 180px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin: 15px 0 10px 0;">
+        <div id="splash-bar" style="width: 0%; height: 100%; background: #ff4757; transition: width 0.3s;"></div>
+    </div>
+    <div id="splash-text" style="color: #2ed573; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">INITIALIZING SYSTEM...</div>
+</div>
+
+<!-- POPUP LOGIN / REGISTER NEON -->
+<div id="auth-modal" class="auth-overlay">
+    <div class="neon-box">
+        <form class="neon-form" onsubmit="event.preventDefault(); handleAuth();">
+            <h2 id="auth-title">LOGIN</h2>
+            
+            <div class="neon-input-group">
+                <label>Username</label>
+                <input type="text" id="auth-username" placeholder="Masukkan username..." required>
+            </div>
+
+            <div class="neon-input-group">
+                <label>Password</label>
+                <input type="password" id="auth-password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-neon" id="auth-btn">Masuk</button>
+
+            <div class="neon-footer">
+                <span id="auth-toggle-prefix">Belum punya akun? </span>
+                <span id="auth-toggle-text" onclick="toggleAuthMode()">Register</span>
+            </div>
+        </form>
+    </div>
+</div
+
+<!-- MODAL PUBLIC PROFILE -->
+<div id="publicProfileModal" class="profile-modal">
+    <div class="profile-card-box">
+        <button class="close-btn" onclick="closeModal('publicProfileModal')">&times;</button>
+        <div class="profile-banner" id="pub-banner-bg">
+            <div class="profile-avatar-wrapper">
+                <img id="pub-avatar-img" class="profile-avatar" src="" alt="Avatar">
+            </div>
+        </div>
+        <div class="profile-body">
+            <div class="profile-names">
+                <h3 id="pub-displayName">Display Name</h3>
+                <small id="pub-username">@username</small>
+            </div>
+            <div class="profile-bio" id="pub-bio">Belum ada bio profile.</div>
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <h4 id="pub-level">Lvl 1</h4>
+                    <p>Level</p>
+                </div>
+                <div class="stat-item">
+                    <h4 id="pub-rank">Otaku</h4>
+                    <p>Rank</p>
+                </div>
+                <div class="stat-item">
+                    <h4 id="pub-xp">0 XP</h4>
+                    <p>Exp</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button id="btn-friend-action" class="btn-profile" style="margin-top: 10px; flex: 1;">+ Tambah Teman</button>
+                <button id="btn-chat-action" class="btn-profile" style="margin-top: 10px; flex: 1; background: #2ed573;">💬 Chat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL VIEW & EDIT PROFILE -->
+<div id="profile-modal" class="profile-modal">
+    <div class="profile-card-box">
+        <button class="close-btn" onclick="closeProfileModal()">&times;</button>
+        <div class="profile-banner" id="p-banner-bg" style="background-image: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800');">
+            <div class="profile-avatar-wrapper">
+                <img id="p-avatar-img" class="profile-avatar" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10" alt="Avatar">
+            </div>
+        </div>
+        <div class="profile-body">
+            <button class="btn-edit-toggle" onclick="toggleEditProfile()">Edit Profile</button>
+            <div class="profile-names">
+                <h3 id="p-displayName">Display Name</h3>
+                <small id="p-username">@username</small>
+            </div>
+            <div class="profile-bio" id="p-bio">Belum ada bio profile.</div>
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <h4 id="p-level">Lvl 1</h4>
+                    <p>Level</p>
+                </div>
+                <div class="stat-item">
+                    <h4 id="p-rank">Otaku</h4>
+                    <p>Rank</p>
+                </div>
+                <div class="stat-item">
+                    <h4 id="p-xp">0 XP</h4>
+                    <p>Exp</p>
+                </div>
+            </div>
+
+            <!-- CONTAINER PERMINTAAN PERTEMANAN -->
+            <div id="friend-requests-container" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 12px;">
+                <h4 style="color:#fff; font-size:13px; margin-bottom:8px;">📩 Permintaan Pertemanan</h4>
+                <div id="friend-requests-list">
+                    <!-- Direset otomatis oleh loadFriendRequests() -->
+                </div>
+            </div>
+
+            <!-- DAFTAR TEMAN (FRIENDLIST) -->
+            <div id="friend-list-wrapper" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 12px;">
+                <h4 style="color:#fff; font-size:13px; margin-bottom:8px;">👥 Daftar Teman</h4>
+                <div id="friend-list-container">
+                    <!-- List teman akan dimuat oleh loadFriendList() -->
+                </div>
+            </div>
+
+            <!-- FORM EDIT PROFILE -->
+            <div class="edit-profile-form" id="edit-profile-box">
+                <label>Display Name (Nama Tampilan)</label>
+                <input type="text" id="edit-displayName-input" placeholder="Masukkan nama panggilan...">
+                <label>Pilih Foto Profil dari Galeri</label>
+                <input type="file" id="edit-avatar-file" accept="image/*">
+                <input type="hidden" id="edit-avatar-base64">
+                <label>Pilih Banner Profil dari Galeri</label>
+                <input type="file" id="edit-banner-file" accept="image/*">
+                <input type="hidden" id="edit-banner-base64">
+                <label>Bio Profile</label>
+                <textarea id="edit-bio-input" rows="2" placeholder="Tulis bio singkat kamu..."></textarea>
+                <button class="btn-profile" onclick="saveProfileChanges()">Simpan Perubahan</button>
+            </div>
+            
+            <button class="btn-logout" onclick="logout()">Logout / Keluar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DETAIL ANIME & LIST EPISODE -->
+<div id="detail-modal" class="modal-detail">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeDetailModal()">&times;</button>
+        <div class="anime-detail-header">
+            <img id="detail-poster" src="" alt="Poster">
+            <div class="anime-detail-info">
+                <h2 id="detail-title">Judul Anime</h2>
+                <small id="detail-season" style="color:#aaa;"></small>
+                <div id="detail-genres" style="margin-top: 5px;"></div>
+            </div>
+        </div>
+        <p class="synopsis" id="detail-synopsis">Sinopsis anime...</p>
+        <button id="bookmark-btn" onclick="toggleBookmark()" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #2f3542; color: #fff; border: 1px solid #ff4757; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            🔖 Tambah ke Favorit
+        </button>
+        <div class="episodes-title">Daftar Episode</div>
+        <div class="episode-list" id="detail-episodes"></div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- HEADER -->
+    <header class="app-header">
+        <div class="brand-logo">
+            <img src="logo.png" alt="Logo" class="custom-logo">
+            <div class="brand-name">ANIME<span>HUB</span></div>
+        </div>
+        <div class="level-card" onclick="openProfileModal()">
+            <div class="user-mini-profile">
+                <img id="mini-avatar-img" class="mini-avatar" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10">
+                <div class="user-info-text">
+                    <b id="display-user">Guest</b>
+                    <small id="user-level">Lvl 1</small>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="xp-progress"></div></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- PLAYER DENGAN PLACEHOLDER / STANDBY SCREEN -->
+    <div class="player-wrapper" id="player-container">
+    <div id="player-placeholder" class="banner-slider">
+    <div class="slider-track" id="slider-track">
+        <!-- Slide Gambar dari Folder banners/ -->
+        <div class="slide"><img src="banners/banner1.jpg" alt="Banner 1"></div>
+        <div class="slide"><img src="banners/banner2.jpg" alt="Banner 2"></div>
+        <div class="slide"><img src="banners/banner3.jpg" alt="Banner 3"></div>
+        <div class="slide"><img src="banners/banner4.jpg" alt="Banner 4"></div>
+    </div>
+
+    <!-- Tombol Navigasi Manual -->
+    <button class="slider-btn prev-btn" onclick="moveSlide(-1)">&#10094;</button>
+    <button class="slider-btn next-btn" onclick="moveSlide(1)">&#10095;</button>
+
+    <!-- Indikator Dot Slider -->
+    <div class="slider-dots" id="slider-dots"></div>
+</div>
+    
+    <!-- Video Player -->
+    <iframe id="anime-player" src="" allowfullscreen style="display: none; width: 100%; height: 100%; border: none; border-radius: 12px; position: absolute; top:0; left:0; z-index: 1;"></iframe>
+    
+    <!-- Overlay Tombol Next Episode -->
+<button id="next-ep-btn" onclick="playNextEpisode()" 
+    title="Next Episode"
+    style="display: none; position: absolute; top: 15px; right: 15px; z-index: 10; background: #1a1c23; color: white; border: none; width: 40px; height: 40px; border-radius: 30%; font-size: 16px; cursor: pointer; backdrop-filter: blur(4px); box-shadow: 0 4px 10px rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+    ⏭︎
+</button>
+</div>
+
+    <h3 id="current-title" style="margin-bottom:15px; color:#FFFFFF;"></h3>
+
+    <!-- AREA KOLOM KOMENTAR -->
+    <div id="commentSection" style="display: none; background: #1a1c23; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333;">
+        <h3 style="color: #FFFFFF; margin-bottom: 15px; font-size: 16px;">💬 Kolom Komentar</h3>
+        
+        <!-- Input Komentar -->
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="commentInput" placeholder="Tulis komentar..." style="flex: 1; padding: 10px; border-radius: 6px; background: #0d0e12; border: 1px solid #333; color: white;">
+            <button onclick="submitComment()" style="background: #ff4757; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">Kirim</button>
+        </div>
+
+        <!-- Tempat List Komentar -->
+        <div id="commentList" style="display: flex; flex-direction: column; gap: 10px;">
+            <p style="color: #888;">Belum ada komentar.</p>
+        </div>
+    </div>
+    
+    <!-- SEARCH BAR & DROPDOWN GENRE -->
+<input type="text" id="search-input" placeholder="Cari judul anime / season..." onkeyup="filterAnime()" style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 999px; border: 1px solid #333; background: #1a1c23; color: #fff; font-size: 14px;">
+
+<!-- CARD GELAP GENRE -->
+<div class="genre-section-wrapper">
+    <!-- Judul di luar button -->
+    <div class="genre-title">Semua Genre</div>
+    
+    <!-- Tombol yang dapat digeser -->
+    <div class="genre-scroll-container">
+        <div class="genre-chip active" onclick="selectGenreChip(this, 'all')">All</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'favorites')">Fav</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'action')">Action</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'fantasy')">Fantasy</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'comedy')">Comedy</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'sci-fi')">Sci-Fi</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'dark fantasy')">Dark Fantasy</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'kids')">Kids</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'drama')">Drama</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'mystery')">Mystery</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'shounen')">Shounen</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'supernatural')">Supernatural</div>
+        <div class="genre-chip" onclick="selectGenreChip(this, 'psychological')">Psychological</div>
+    </div>
+</div>
+    
+    <!-- BANNER CONTINUE WATCHING -->
+<div id="continue-watching-box" style="display: none; background: #1a1c23; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h4 style="color: white; font-size: 14px; margin: 0;">Lanjutkan Menonton</h4>
+        <span onclick="openHistoryPage()" style="color: #ff4757; font-size: 11px; cursor: pointer; font-weight: bold;">lihat history &gt;</span>
+    </div>
+    <!-- Layout dengan poster di sebelah kiri -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <img id="cw-poster" src="" style="width: 70px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #ff4757;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+            <span id="cw-title" style="color: #ccc; font-size: 12px; font-weight: bold;">-</span>
+            <button id="cw-play-btn" style="background: #ff4757; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; width: fit-content;">Putar</button>
+        </div>
+    </div>
+</div>
+
+    <div class="anime-grid" id="anime-list"></div>
+
+    <div class="admin-panel" id="admin-panel">
+    <h3>🛡️ Panel Admin (Manajemen Akun)</h3>
+    
+    <!-- TAB NAVIGASI ADMIN -->
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+        <button onclick="switchAdminTab('users')" id="admin-tab-users" class="admin-tab-btn active">👥 Daftar User</button>
+        <button onclick="switchAdminTab('banned')" id="admin-tab-banned" class="admin-tab-btn">🚫 Banned/Suspend</button>
+    </div>
+
+    <!-- KONTEN TAB USER LIST -->
+    <div id="admin-users-content">
+        <div id="user-list">Loading data akun...</div>
+    </div>
+
+    <!-- KONTEN TAB BANNED LIST -->
+    <div id="admin-banned-content" style="display: none;">
+        <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+            <input type="text" id="ban-username-input" placeholder="Username..." style="flex:1; padding: 8px; border-radius: 6px; background: #0d0e12; border: 1px solid #333; color: #fff;">
+            <input type="number" id="suspend-duration-input" placeholder="Jam (misal: 24)" style="width: 100px; padding: 8px; border-radius: 6px; background: #0d0e12; border: 1px solid #333; color: #fff;">
+            <button onclick="adminSuspendUser()" style="background: #eccc68; color: #000; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer;">⏳ Suspend</button>
+            <button onclick="adminBanUser()" style="background: #ff4757; color: #fff; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer;">🚫 Ban</button>
+            <button onclick="adminUnbanUser()" style="background: #2ed573; color: #000; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer;">✅ Unban</button>
+            <button onclick="loadBannedList()" style="background: #1a1c23; color: #fff; border: 1px solid #333; padding: 8px 12px; border-radius: 6px; cursor: pointer;">🔄 Refresh</button>
+        </div>
+        
+        <div id="banned-list-container">
+            <p style="color: #888;">Loading data banned...</p>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="index.html" class="nav-item active">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+    </a>
+    <a href="schedule.html" class="nav-item">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Schedule</span>
+    </a>
+    <a href="catalog.html" class="nav-item">
+        <i class="fas fa-book"></i>
+        <span>Catalog</span>
+    </a>
+    <!-- Arahkan ke library.html -->
+    <a href="library.html" class="nav-item">
+        <i class="fas fa-bookmark"></i>
+        <span>Library</span>
+    </a>
+    <a href ="profile.html" class="nav-item">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+    </div>
+</nav>
+
+<div id="history-modal" class="profile-modal">
+    <div class="profile-card-box" style="padding: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="color: #ff4757;">Riwayat Nonton</h3>
+            <button class="close-btn" onclick="closeModal('history-modal')" style="position: static;">&times;</button>
+        </div>
+        <!-- Grid tempat poster anime history ditampilkan -->
+        <div id="history-grid" class="anime-grid"></div>
+    </div>
+</div>
+
+<script>
+    let currentVideoId = "EPISODE_1";
+
+    const animeSeriesData = [
+        { 
+            id: 1, 
+            title: "Doraemon Series", 
+            season: "Series",
+            genres: ["Comedy", "Sci-Fi", "Kids"],
+            synopsis: "Doraemon adalah kucing robot dari abad ke-22 yang dikirim kembali ke masa lalu untuk membantu seorang anak laki-laki bernama Nobita Nobi.",
+            poster: "Poster Anime/DoraemonS.jpeg", 
+            episodes: [
+                { title: "Doraemon - Frasa 14", file: "Video/Doraemon/Doraemon Series/Doraemon - Frasa 14 [Bahasa Indonesia] [FHFAlJoJCd0].webm" },
+              { title: "Doraemon - Episode 375 & 376", file: "Video/Doraemon/Doraemon Series/Doraemon - Episode 375 & 376 [Bahasa Indonesia].mp4" },
+              { title: "Doraemon - Episode 371 & 372", file: "Video/Doraemon/Doraemon Series/Doraemon - Episode 371 & 372 [Bahasa Indonesia].mp4" }
+            ]
+        },
+      //ATTACK ON TITAN//
+        { 
+            id: 2, 
+            title: "Attack on Titan", 
+            season: "Season 1",
+            genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
+            synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.", 
+            poster: "Poster Anime/Aot_s1.webp", 
+            episodes: [
+                { title: "Episode 1 - To You, in 2,000 Years: The Fall of Shiganshina, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 01 [Takarir Indonesia].mp4" },
+                { title: "Episode 2 - That Day: The Fall of Shiganshina, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 02 [Takarir Indonesia].mp4" },
+                { title: "Episode 3 - A Dim Light Amid Despair: Humanity Comeback, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 03 [Takarir Indonesia].mp4" },
+                { title: "Episode 4 - The Night of the Closing Ceremony: Humanity Comeback, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 04 [Takarir Indonesia].mp4" },
+                { title: "Episode 5 - First Battle: The Struggle for Trost, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 05 [Takarir Indonesia].mp4" },
+                { title: "Episode 6 - The World the Girl Saw: The Struggle for Trost, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 06 [Takarir Indonesia].mp4" },
+                { title: "Episode 7 - Small Blade: The Struggle for Trost, Part 3", file: "Video/AOT/AotS1/Attack on Titan - Episode 07 [Takarir Indonesia].mp4" },
+                { title: "Episode 8 - I Can Hear His Heartbeat: The Struggle for Trost, Part 4", file: "Video/AOT/AotS1/Attack on Titan - Episode 08 [Takarir Indonesia].mp4" },
+                { title: "Episode 9 - Whereabouts of His Left Arm: The Struggle for Trost, Part 5", file: "Video/AOT/AotS1/Attack on Titan - Episode 09 [Takarir Indonesia].mp4" },
+                { title: "Episode 10 - Response: The Struggle for Trost, Part 6", file: "Video/AOT/AotS1/Attack on Titan - Episode 10 [Takarir Indonesia].mp4" },
+                { title: "Episode 11 - Idol: The Struggle for Trost, Part 7", file: "Video/AOT/AotS1/Attack on Titan - Episode 11 [Takarir Indonesia].mp4" },
+                { title: "Episode 12 - Wound: The Struggle for Trost, Part 8", file: "Video/AOT/AotS1/Attack on Titan - Episode 12 [Takarir Indonesia].mp4" },
+                { title: "Episode 13 - Primal Desire: The Struggle for Trost, Part 9", file: "Video/AOT/AotS1/Attack on Titan - Episode 13 [Takarir Indonesia].mp4" },
+                { title: "Episode 14 - Cant Look Into His Eyes Yet: Eve of the Counterattack, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 14 [Takarir Indonesia].mp4" },
+                { title: "Episode 15 - Special Operations Squad: Eve of the Counterattack, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 15 [Takarir Indonesia].mp4" },
+                { title: "Episode 16 - What Needs to be Done Now: Eve of the Counterattack, Part 3", file: "Video/AOT/AotS1/Attack on Titan - Episode 16 [Takarir Indonesia].mp4" },
+                { title: "Episode 17 - Female Titan: The 57th Exterior Scouting Mission, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 17 [Takarir Indonesia].mp4" },
+                { title: "Episode 18 - Forest of Giant Trees: The 57th Exterior Scouting Mission, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 18 [Takarir Indonesia].mp4" },
+                { title: "Episode 19 - Bite: The 57th Exterior Scouting Mission, Part 3", file: "Video/AOT/AotS1/Attack on Titan - Episode 19 [Takarir Indonesia].mp4" },
+                { title: "Episode 20 - Erwin Smith: The 57th Exterior Scouting Mission, Part 4", file: "Video/AOT/AotS1/Attack on Titan - Episode 20 [Takarir Indonesia].mp4" },
+                { title: "Episode 21 - Crushing Blow: The 57th Exterior Scouting Mission, Part 5", file: "Video/AOT/AotS1/Attack on Titan - Episode 21 [Takarir Indonesia].mp4" },
+                { title: "Episode 22 - The Defeated: The 57th Exterior Scouting Mission, Part 6", file: "Video/AOT/AotS1/Attack on Titan - Episode 22 [Takarir Indonesia].mp4" },
+                { title: "Episode 23 - Smile: Assault on Stohess, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 23 [Takarir Indonesia].mp4" },
+                { title: "Episode 24 - Mercy: Assault on Stohess, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 24 [Takarir Indonesia].mp4" },
+                { title: "Episode 25 - Wall: Assault on Stohess, Part 3", file: "Video/AOT/AotS1/Attack on Titan - Episode 25 [Takarir Indonesia].mp4" }
+            ]
+        },
+      //ATTACK ON TITAN S2//
+        { 
+            id: 3, 
+            title: "Attack On Titan S2", 
+            season: "Season 2",
+            genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
+            synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
+            poster: "Poster Anime/Aot_s2.webp", 
+            episodes: [
+                { title: "Episode 1 - Beast Titan", file: "Video/AOT/AotS2/Attack on Titan - Episode 26 [Takarir Indonesia].mp4" },
+                { title: "Episode 2 - Im Home", file: "Video/AOT/AotS2/Attack on Titan - Episode 27 [Takarir Indonesia].mp4" },
+                { title: "Episode 3 - Southwestward", file: "Video/AOT/AotS2/Attack on Titan - Episode 28 [Takarir Indonesia].mp4" },
+                { title: "Episode 4 - Soldier", file: "Video/AOT/AotS2/Attack on Titan - Episode 29 [Takarir Indonesia].mp4" },
+                { title: "Episode 5 - Historia", file: "Video/AOT/AotS2/Attack on Titan - Episode 30 [Takarir Indonesia].mp4" },
+                { title: "Episode 6 - Warrior", file: "Video/AOT/AotS2/Attack on Titan - Episode 31 [Takarir Indonesia].mp4" },
+                { title: "Episode 7 - Close Combat", file: "Video/AOT/AotS2/Attack on Titan - Episode 32 [Takarir Indonesia].mp4" },
+                { title: "Episode 8 - The Hunters", file: "Video/AOT/AotS2/Attack on Titan - Episode 33 [Takarir Indonesia].mp4" },
+                { title: "Episode 9 - Opening", file: "Video/AOT/AotS2/Attack on Titan - Episode 34 [Takarir Indonesia].mp4" },
+                { title: "Episode 10 - Children", file: "Video/AOT/AotS2/Attack on Titan - Episode 35 [Takarir Indonesia].mp4" },
+                { title: "Episode 11 - Charge", file: "Video/AOT/AotS2/Attack on Titan - Episode 36 [Takarir Indonesia].mp4" },
+                { title: "Episode 12 - Scream", file: "Video/AOT/AotS2/Attack on Titan - Episode 37 [Takarir Indonesia].mp4" }
+            ]
+        },
+      //ATTACK ON TITAN S3//
+      { 
+    id: 4, 
+    title: "Attack On Titan S3", 
+    season: "Season 3",
+    genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
+    synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
+    poster: "Poster Anime/Aot_S3.jpeg", 
+    episodes: [
+        { title: "Episode 1 - Smoke Signal", file: "Video/AOT/AotS3/Attack on Titan - Episode 38 [Takarir Indonesia].mp4" },
+{ title: "Episode 2 - Pain", file: "Video/AOT/AotS3/Attack on Titan - Episode 39 [Takarir Indonesia].mp4" },
+{ title: "Episode 3 - Old Story", file: "Video/AOT/AotS3/Attack on Titan - Episode 40 [Takarir Indonesia].mp4" },
+{ title: "Episode 4 - Trust", file: "Video/AOT/AotS3/Attack on Titan - Episode 41 [Takarir Indonesia].mp4" },
+{ title: "Episode 5 - Reply", file: "Video/AOT/AotS3/Attack on Titan - Episode 42 [Takarir Indonesia].mp4" },
+{ title: "Episode 6 - Sin", file: "Video/AOT/AotS3/Attack on Titan - Episode 43 [Takarir Indonesia].mp4" },
+{ title: "Episode 7 - Wish", file: "Video/AOT/AotS3/Attack on Titan - Episode 44 [Takarir Indonesia].mp4" },
+{ title: "Episode 8 - Outside the Walls of Orvud District", file: "Video/AOT/AotS3/Attack on Titan - Episode 45 [Takarir Indonesia].mp4" },
+{ title: "Episode 9 - Ruler of the Walls", file: "Video/AOT/AotS3/Attack on Titan - Episode 46 [Takarir Indonesia].mp4" },
+{ title: "Episode 10 - Friends", file: "Video/AOT/AotS3/Attack on Titan - Episode 47 [Takarir Indonesia].mp4" },
+{ title: "Episode 11 - Bystander", file: "Video/AOT/AotS3/Attack on Titan - Episode 48 [Takarir Indonesia].mp4" },
+{ title: "Episode 12 - Night of the Battle to Retake the Wall", file: "Video/AOT/AotS3/Attack on Titan - Episode 49 [Takarir Indonesia].mp4" },
+{ title: "Episode 13 - The Town Where Everything Began", file: "Video/AOT/AotS3/Attack on Titan - Episode 50 [Takarir Indonesia].mp4" },
+{ title: "Episode 14 - Thunder Spears", file: "Video/AOT/AotS3/Attack on Titan - Episode 51 [Takarir Indonesia].mp4" },
+{ title: "Episode 15 - Descent", file: "Video/AOT/AotS3/Attack on Titan - Episode 52 [Takarir Indonesia].mp4" },
+{ title: "Episode 16 - Perfect Game", file: "Video/AOT/AotS3/Attack on Titan - Episode 53 [Takarir Indonesia].mp4" },
+{ title: "Episode 17 - Hero", file: "Video/AOT/AotS3/Attack on Titan - Episode 54 [Takarir Indonesia].mp4" },
+{ title: "Episode 18 - Midnight Sun", file: "Video/AOT/AotS3/Attack on Titan - Episode 55 [Takarir Indonesia].mp4" },
+{ title: "Episode 19 - The Basement", file: "Video/AOT/AotS3/Attack on Titan - Episode 56 [Takarir Indonesia].mp4" },
+{ title: "Episode 20 - That Day", file: "Video/AOT/AotS3/Attack on Titan - Episode 57 [Takarir Indonesia].mp4" },
+{ title: "Episode 21 - Attack Titan", file: "Video/AOT/AotS3/Attack on Titan - Episode 58 [Takarir Indonesia].mp4" },
+{ title: "Episode 22 - The Other Side of the Wall", file: "Video/AOT/AotS3/Attack on Titan - Episode 59 [Takarir Indonesia].mp4" }
+    ]
+},
+      { 
+    id: 5, 
+    title: "Attack On Titan S4", 
+    season: "Season 4",
+    genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
+    synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
+    poster: "Poster Anime/Aot_S4.jpg", 
+    episodes: [
+        { title: "Episode 1 - The Other Side of the Sea", file: "Video/AOT/AotS4/Attack on Titan - Episode 60 [Takarir Indonesia].mp4" },
+{ title: "Episode 2 - Midnight Train", file: "Video/AOT/AotS4/Attack on Titan - Episode 61 [Takarir Indonesia].mp4" },
+{ title: "Episode 3 - The Door of Hope", file: "Video/AOT/AotS4/Attack on Titan - Episode 62 [Takarir Indonesia].mp4" },
+{ title: "Episode 4 - From One Hand to Another", file: "Video/AOT/AotS4/Attack on Titan - Episode 63 [Takarir Indonesia].mp4" },
+{ title: "Episode 5 - Declaration of War", file: "Video/AOT/AotS4/Attack on Titan - Episode 64 [Takarir Indonesia].mp4" },
+{ title: "Episode 6 - The War Hammer Titan", file: "Video/AOT/AotS4/Attack on Titan - Episode 65 [Takarir Indonesia].mp4" },
+{ title: "Episode 7 - Assault", file: "Video/AOT/AotS4/Attack on Titan - Episode 66 [Takarir Indonesia].mp4" },
+{ title: "Episode 8 - Assassin's Bullet", file: "Video/AOT/AotS4/Attack on Titan - Episode 67 [Takarir Indonesia].mp4" },
+{ title: "Episode 9 - Brave Volunteers", file: "Video/AOT/AotS4/Attack on Titan - Episode 68 [Takarir Indonesia].mp4" },
+{ title: "Episode 10 - A Sound Argument", file: "Video/AOT/AotS4/Attack on Titan - Episode 69 [Takarir Indonesia].mp4" },
+{ title: "Episode 11 - Deceiver", file: "Video/AOT/AotS4/Attack on Titan - Episode 70 [Takarir Indonesia].mp4" },
+{ title: "Episode 12 - Guides", file: "Video/AOT/AotS4/Attack on Titan - Episode 71 [Takarir Indonesia].mp4" },
+{ title: "Episode 13 - Children of the Forest", file: "Video/AOT/AotS4/Attack on Titan - Episode 72 [Takarir Indonesia].mp4" },
+{ title: "Episode 14 - Savagery", file: "Video/AOT/AotS4/Attack on Titan - Episode 73 [Takarir Indonesia].mp4" },
+{ title: "Episode 15 - Sole Salvation", file: "Video/AOT/AotS4/Attack on Titan - Episode 74 [Takarir Indonesia].mp4" },
+{ title: "Episode 16 - Above and Below", file: "Video/AOT/AotS4/Attack on Titan - Episode 75 [Takarir Indonesia].mp4" }
+    ]
+},
+      { 
+    id: 6, 
+    title: "Attack On Titan : Season 4 Part 2", 
+    season: "Season 4",
+    genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
+    synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
+    poster: "Poster Anime/Aot_S4_Part2.jpg", 
+    episodes: [
+        { title: "Episode 1 - Judgment", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 76 [Takarir Indonesia].mp4" },
+{ title: "Episode 2 - Sneak Attack", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 77 [Takarir Indonesia].mp4" },
+{ title: "Episode 3 - Two Brothers", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 78 [Takarir Indonesia].mp4" },
+{ title: "Episode 4 - Memories of the Future", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 79 [Takarir Indonesia].mp4" },
+{ title: "Episode 5 - From You, 2,000 Years Ago", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 80 [Takarir Indonesia].mp4" },
+{ title: "Episode 6 - Thaw", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 81 [Takarir Indonesia].mp4" },
+{ title: "Episode 7 - Sunset", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 82 [Takarir Indonesia].mp4" },
+{ title: "Episode 8 - Pride", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 83 [Takarir Indonesia].mp4" },
+{ title: "Episode 9 - Night of the End", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 84 [Takarir Indonesia].mp4" },
+{ title: "Episode 10 - Traitor", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 85 [Takarir Indonesia].mp4" },
+{ title: "Episode 11 - Retrospective", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 86 [Takarir Indonesia].mp4" },
+{ title: "Episode 12 - The Dawn of Humanity", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 87 [Takarir Indonesia].mp4" }
+    ]
+},
+      { 
+    id: 7, 
+    title: "Attack On Titan : Final Chapters", 
+    season: "Final Season",
+    genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
+    synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
+    poster: "Poster Anime/Aot_FinalChapters.jpg", 
+    episodes: [
+        { title: "Episode 1 - The Final Chapters: Special 1", file: "Video/AOT/AotFinal/Attack on Titan - Episode 88 [Takarir Indonesia].mp4" },
+{ title: "Episode 2 - The Final Chapters: Special 2", file: "Video/AOT/AotFinal/Attack on Titan - Episode 89 [Takarir Indonesia].mp4" }
+    ]
+},
+//DORAEMON THE MOVIE//
+      { 
+    id: 8, 
+    title: "Doraemon Movie - Stand By Me", 
+    season: "Movie",
+    genres: ["Comedy", "Sci-fi", "Kids"],
+    synopsis: "Doraemon adalah kucing robot dari abad ke-22 yang dikirim kembali ke masa lalu untuk membantu seorang anak laki-laki bernama Nobita Nobi.",
+    poster: "Poster Anime/Stand By Me Doraemon.jpg", 
+    episodes: [
+        { title: "Movie - Stand by Me Doraemon", file: "Video/Doraemon/Doraemon Movie/Doraemon stand by me dub indo.mp4" }
+    ]
+},
+             { 
+            id: 9, 
+            title: "Summer Ghost", 
+            season: "Movie",
+            genres: ["Drama", "Supernatural", "Psychological"],
+            synopsis: "Tiga remaja mencari hantu musim panas.",
+            poster: "Poster Anime/SummerGhost.jpg", 
+            episodes: [
+                { title: "Movie", file: "Video/Summer Ghost/SummerGhost.mp4" }
+            ]
+        }
+    ];
+
+    let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+    let viewedUserId = null;
+    let isRegisterMode = false;
+    let xpInterval = null;
+    let currentAnimeId = null;
+    let favoriteAnimes = JSON.parse(localStorage.getItem('myAnimeFavorites') || '[]');
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedUser = localStorage.getItem('userSession');
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            document.getElementById('auth-modal').style.display = 'none';
+            initUserUI();
+        }
+        renderKatalog();
+        setupGalleryUploadListeners();
+
+        const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
+        const splash = document.getElementById('splash-screen');
+
+        if (!hasSeenSplash && splash) {
+            splash.style.display = 'flex';
+            const splashText = document.getElementById('splash-text');
+            const splashBar = document.getElementById('splash-bar');
+
+            if (splashText && splashBar) {
+                setTimeout(() => { splashBar.style.width = "35%"; splashText.innerText = "LOADING CORE MODULES..."; }, 400);
+                setTimeout(() => { splashBar.style.width = "70%"; splashText.innerText = "CONFIGURING USER INTERFACE..."; }, 1000);
+                setTimeout(() => { splashBar.style.width = "100%"; splashText.innerText = "SYSTEM READY!"; }, 1600);
+            }
+
+            setTimeout(() => {
+                splash.style.opacity = '0';
+                setTimeout(() => splash.style.display = 'none', 500);
+                sessionStorage.setItem('hasSeenSplash', 'true');
+            }, 2300);
+        } else if (splash) {
+            splash.style.display = 'none';
+        }
+    });
+
+    function setupGalleryUploadListeners() {
+        document.getElementById('edit-avatar-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) { document.getElementById('edit-avatar-base64').value = evt.target.result; };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('edit-banner-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) { document.getElementById('edit-banner-base64').value = evt.target.result; };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    function renderKatalog() {
+        const listContainer = document.getElementById('anime-list');
+        if (!listContainer) return;
+        listContainer.innerHTML = "";
+
+        const sortedData = [...animeSeriesData].sort((a, b) => b.id - a.id);
+
+        sortedData.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'anime-card';
+            card.setAttribute('data-genres', JSON.stringify(item.genres || []));
+            card.setAttribute('data-id', item.id);
+            card.onclick = () => openDetailModal(item.id);
+            card.innerHTML = `
+                <span class="season-badge">${item.season}</span>
+                <img src="${item.poster}">
+                <div class="anime-info"><b>${item.title}</b></div>
+            `;
+            listContainer.appendChild(card);
+        });
+    }
+    
+    let selectedGenreValue = 'all';
+
+function selectGenreChip(element, genreValue) {
+    // Hapus kelas 'active' dari semua chip
+    document.querySelectorAll('.genre-chip').forEach(chip => {
+        chip.classList.remove('active');
+    });
+
+    // Tambahkan kelas 'active' pada chip yang diklik
+    element.classList.add('active');
+    
+    // Simpan genre yang dipilih lalu jalankan filter
+    selectedGenreValue = genreValue;
+    filterAnime();
+}
+
+    function filterAnime() {
+    let searchInput = document.getElementById('search-input');
+    let listContainer = document.getElementById('anime-list');
+    
+    if (!searchInput || !listContainer) return;
+
+    let keyword = searchInput.value.toLowerCase().trim();
+    let selectedGenre = selectedGenreValue.toLowerCase().trim();
+    let cards = Array.from(document.querySelectorAll('.anime-card'));
+
+    if (keyword !== "") {
+        cards.sort((a, b) => Number(a.getAttribute('data-id')) - Number(b.getAttribute('data-id')));
+    } else {
+        cards.sort((a, b) => Number(b.getAttribute('data-id')) - Number(a.getAttribute('data-id')));
+    }
+
+    cards.forEach(card => {
+        listContainer.appendChild(card);
+
+        let title = card.querySelector('.anime-info').innerText.toLowerCase();
+        let cardId = Number(card.getAttribute('data-id') || 0);
+        
+        let rawGenres = JSON.parse(card.getAttribute('data-genres') || '[]');
+        let genres = rawGenres.map(g => String(g).toLowerCase());
+
+        let matchTitle = title.includes(keyword);
+        
+        let matchGenre = false;
+        if (selectedGenre === 'all') {
+            matchGenre = true;
+        } else if (selectedGenre === 'favorites') {
+            matchGenre = favoriteAnimes.includes(cardId);
+        } else {
+            matchGenre = genres.includes(selectedGenre);
+        }
+
+        if (matchTitle && matchGenre) {
+            card.style.display = "block";
+        } else {
+            card.style.display = "none";
+        }
+    });
+}
+
+    function submitComment() {
+        const input = document.getElementById('commentInput');
+        const text = input.value.trim();
+        const currentTitle = document.getElementById('current-title').innerText;
+
+        if (!text) return alert("Komentar tidak boleh kosong!");
+        if (!currentTitle || currentTitle === "Silakan pilih anime") return alert("Putar anime terlebih dahulu sebelum mengirim komentar!");
+
+        const username = (currentUser) ? currentUser.username : 'Anonymous';
+
+        fetch('/api/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video: currentTitle, text: text, user: username })
+        })
+        .then(res => res.json())
+        .then(() => {
+            input.value = '';
+            loadComments();
+        })
+        .catch(err => console.error("Gagal mengirim komentar:", err));
+    }
+
+    function loadComments() {
+    const currentTitle = document.getElementById('current-title').innerText;
+    if (!currentTitle || currentTitle === "Silakan pilih anime") return;
+
+    fetch(`/api/comments?video=${encodeURIComponent(currentTitle)}`)
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById('commentList');
+            if (!list) return;
+
+            if (data.length === 0) {
+                list.innerHTML = '<p style="color: #888; font-size: 13px;">Belum ada komentar. Jadilah yang pertama!</p>';
+                return;
+            }
+
+            const activeUser = typeof currentUser !== 'undefined' && currentUser ? currentUser : JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const currentUsername = activeUser ? activeUser.username : null;
+            const isAdmin = activeUser && (activeUser.role === 'admin' || activeUser.username === 'admin');
+
+            // === FUNGSI UNTUK ESCAPE HTML ===
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            list.innerHTML = data.map(c => {
+                const canDelete = (currentUsername && c.user === currentUsername) || isAdmin;
+                const deleteBtnHtml = canDelete ? `<button onclick="deleteComment(${c.id})" style="background: transparent; color: #ff4757; border: none; cursor: pointer; font-size: 11px; font-weight: bold; padding: 2px 6px;">🗑️ Hapus</button>` : '';
+                const rankBg = c.rank === 'Admin' ? '#ff4757' : '#2ed573';
+                
+                // === ESCAPE TEXT KOMENTAR ===
+                const escapedText = escapeHtml(c.text);
+                const escapedUser = escapeHtml(c.user);
+
+                return `
+                    <div style="background: #0d0e12; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start;">
+                        <img src="${c.avatar || 'https://via.placeholder.com/40'}" alt="${escapedUser}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #333; cursor:pointer;" onclick="openPublicProfile('${escapedUser}')">
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <strong onclick="openPublicProfile('${escapedUser}')" style="cursor: pointer; color: #fff; font-size: 13px;">@${escapedUser}</strong>
+                                    <span style="background: ${rankBg}; color: #fff; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${c.rank || 'Member'}</span>
+                                    <span style="color: #666; font-size: 11px;">${c.date || ''}</span>
+                                </div>
+                                ${deleteBtnHtml}
+                            </div>
+                            <p style="margin: 0; color: #eee; font-size: 13px; line-height: 1.4;">${escapedText}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        })
+        .catch(err => console.error("Gagal memuat komentar:", err));
+}
+
+        function deleteComment(commentId) {
+        if (!currentUser) return alert("Silakan login terlebih dahulu!");
+        if (!confirm("Apakah Anda yakin ingin menghapus komentar ini?")) return;
+
+        fetch(`/api/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser.username })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                loadComments();
+            } else {
+                alert(data.message || "Gagal menghapus komentar.");
+            }
+        })
+        .catch(err => console.error("Error menghapus komentar:", err));
+    }
+
+    async function openPublicProfile(username) {
+    if (currentUser && currentUser.username === username) {
+        openProfileModal();
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/users/${encodeURIComponent(username)}`);
+        if (!res.ok) return alert("User tidak ditemukan!");
+
+        const targetUser = await res.json();
+        viewedUserId = targetUser.username;
+
+        // === BAGIAN ISI PROFIL PUBLIK ===
+        document.getElementById('pub-displayName').innerText = targetUser.displayName || targetUser.username;
+        document.getElementById('pub-username').innerText = "@" + targetUser.username;
+        document.getElementById('pub-bio').innerText = targetUser.bio || "Belum ada bio profile.";
+        
+        // AVATAR
+        document.getElementById('pub-avatar-img').src = targetUser.avatar || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10";
+        
+        // BANNER
+        const pubBanner = document.getElementById('pub-banner-bg');
+        if (pubBanner) {
+            pubBanner.style.backgroundImage = `url('${targetUser.banner || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800"}')`;
+        }
+
+        // STATS
+        document.getElementById('pub-level').innerText = "Lvl " + (targetUser.level || 1);
+        document.getElementById('pub-rank').innerText = getRankTitle(targetUser.level || 1);
+        document.getElementById('pub-xp').innerText = (targetUser.xp || 0) + " XP";
+
+        // === LOGIKA TOMBOL TEMAN ===
+        const btnAction = document.getElementById('btn-friend-action');
+        if (btnAction && currentUser) {
+            const statusRes = await fetch(`/api/friends/status/${currentUser.username}/${targetUser.username}`);
+            const statusData = await statusRes.json();
+
+            if (statusData.status === 'accepted') {
+                btnAction.innerText = "❌ Unfriend";
+                btnAction.style.background = "#ff4757";
+                btnAction.onclick = () => unfriendUser(currentUser.username, targetUser.username);
+            } else if (statusData.status === 'pending') {
+                btnAction.innerText = "⏳ Menunggu Konfirmasi";
+                btnAction.style.background = "#eccc68";
+                btnAction.onclick = null;
+            } else {
+                btnAction.innerText = "+ Tambah Teman";
+                btnAction.style.background = "#2ed573";
+                btnAction.onclick = () => addFriend(targetUser.username);
+            }
+        }
+
+        const btnChat = document.getElementById('btn-chat-action');
+        if (btnChat) {
+            btnChat.onclick = () => openChat(targetUser.username);
+        }
+
+        // === TAMBAHKAN FULLSCREEN LISTENER UNTUK AVATAR ===
+        attachAvatarFullscreenListeners();
+
+        // === TAMPILKAN MODAL ===
+        document.getElementById('publicProfileModal').style.display = 'flex';
+
+    } catch (err) {
+        console.error(err);
+        alert("Gagal memuat profil pengguna.");
+    }
+}
+
+async function addFriend(targetUsername) {
+    if (!currentUser) return alert("Silakan login terlebih dahulu!");
+    
+    try {
+        const res = await fetch('/api/friends/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender: currentUser.username, receiver: targetUsername })
+        });
+        const data = await res.json();
+        alert(data.message);
+        openPublicProfile(targetUsername); // Refresh status tombol
+    } catch (err) {
+        console.error("Error sending friend request:", err);
+    }
+}
+
+     let lastXpTime = Date.now();
+     let currentPlayingAnimeId = null;
+     let currentPlayingEpIndex = -1;
+
+    function playVideo(embedUrl, fullTitle, animeId = null, epIndex = -1) {
+    closeDetailModal();
+
+    const iframe = document.getElementById('anime-player');
+    const placeholder = document.getElementById('player-placeholder');
+    const commentSec = document.getElementById('commentSection');
+    const nextBtn = document.getElementById('next-ep-btn');
+
+    if (commentSec) commentSec.style.display = 'block';
+
+    iframe.src = embedUrl;
+    iframe.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+
+    document.getElementById('current-title').innerText = fullTitle;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Simpan informasi episode yang diputar
+    currentPlayingAnimeId = animeId;
+    currentPlayingEpIndex = epIndex;
+
+    // LOGIKA PENAMPILAN TOMBOL NEXT EPS:
+    if (animeId !== null && epIndex !== -1) {
+        const anime = animeSeriesData.find(a => a.id === animeId);
+        // Tampilkan tombol 'flex' jika masih ada episode berikutnya
+        if (anime && epIndex < anime.episodes.length - 1) {
+            if (nextBtn) nextBtn.style.display = 'flex';
+        } else {
+            if (nextBtn) nextBtn.style.display = 'none'; // Sembunyikan jika episode terakhir
+        }
+
+        saveContinueWatching(anime, epIndex);
+    } else {
+        // Jika diputar dari sumber tanpa index (seperti continue watching), tampilkan tombol
+        if (nextBtn) nextBtn.style.display = 'flex';
+    }
+
+    loadComments(); 
+
+    if (xpInterval) clearInterval(xpInterval);
+    lastXpTime = Date.now();
+    xpInterval = setInterval(() => {
+        const now = Date.now();
+        const deltaSeconds = Math.floor((now - lastXpTime) / 1000);
+        if (deltaSeconds >= 5) {
+            addXP(deltaSeconds);
+            lastXpTime = now;
+        }
+    }, 1000);
+}
+
+    function playNextEpisode() {
+    if (currentPlayingAnimeId === null || currentPlayingEpIndex === -1) return;
+
+    const anime = animeSeriesData.find(a => a.id === currentPlayingAnimeId);
+    if (!anime) return;
+
+    const nextIndex = currentPlayingEpIndex + 1;
+    if (nextIndex < anime.episodes.length) {
+        const nextEp = anime.episodes[nextIndex];
+        playVideo(nextEp.file, `${anime.title} - ${nextEp.title}`, anime.id, nextIndex);
+    }
+}
+
+// Update fungsi openDetailModal agar memasukkan parameter animeId & index saat klik episode
+function openDetailModal(animeId) {
+    currentAnimeId = animeId;
+    const anime = animeSeriesData.find(a => a.id === animeId);
+    if (!anime) return;
+
+    document.getElementById('detail-poster').src = anime.poster;
+    document.getElementById('detail-title').innerText = anime.title;
+    document.getElementById('detail-season').innerText = anime.season + " • " + anime.episodes.length + " Episode";
+    document.getElementById('detail-synopsis').innerText = anime.synopsis;
+    document.getElementById('detail-genres').innerHTML = anime.genres.map(g => `<span class="genre-tag">${g}</span>`).join('');
+
+    // Mengirimkan anime.id dan index episode ke fungsi playVideo
+    document.getElementById('detail-episodes').innerHTML = anime.episodes.map((ep, idx) => `
+        <div class="episode-item" onclick="playVideo('${ep.file}', '${anime.title} - ${ep.title}', ${anime.id}, ${idx})">
+            <span>${ep.title}</span>
+            <span class="play-icon">▶ Putar</span>
+        </div>
+    `).join('');
+
+    updateBookmarkButtonUI();
+    document.getElementById('detail-modal').style.display = 'flex';
+}
+
+    function closeDetailModal() { document.getElementById('detail-modal').style.display = 'none'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function openProfileModal() {
+        if (!currentUser) return;
+        document.getElementById('p-displayName').innerText = currentUser.displayName || currentUser.username;
+        document.getElementById('p-username').innerText = "@" + currentUser.username;
+        document.getElementById('p-bio').innerText = currentUser.bio || "Belum ada bio profile.";
+        
+        document.getElementById('p-avatar-img').src = currentUser.avatar || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10";
+        document.getElementById('p-banner-bg').style.backgroundImage = `url('${currentUser.banner || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800"}')`;
+
+        document.getElementById('p-level').innerText = "Lvl " + (currentUser.level || 1);
+        document.getElementById('p-rank').innerText = getRankTitle(currentUser.level || 1);
+        document.getElementById('p-xp').innerText = (currentUser.xp || 0) + " XP";
+
+        function loadFriendRequests() {
+    const container = document.getElementById('friend-requests-list');
+    if (!container || !currentUser) return;
+
+    // Mengambil data permintaan dari backend Express
+    fetch(`/api/friends/requests/${currentUser.username}`)
+        .then(res => res.json())
+        .then(requests => {
+            container.innerHTML = ''; 
+
+            if (requests.length === 0) {
+                container.innerHTML = '<p style="color:#888; font-size:12px;">Tidak ada permintaan pertemanan.</p>';
+                return;
+            }
+
+            requests.forEach(req => {
+                container.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#0d0e12; padding:6px 10px; border-radius:6px; margin-bottom:6px;">
+                        <span style="color:#fff; font-size:12px;">👤 @${req.user1}</span>
+                        <div style="display:flex; gap:4px;">
+                            <button onclick="acceptFriend('${req.id}')" style="background:#2ed573; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Terima</button>
+                            <button onclick="rejectFriend('${req.id}')" style="background:#ff4757; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Tolak</button>
+                        </div>
+                    </div>
+                `;
+            });
+        })
+        .catch(err => console.error("Gagal memuat permintaan teman:", err));
+}
+        loadFriendRequests();
+        loadFriendList();
+
+        document.getElementById('profile-modal').style.display = 'flex';
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profile-modal').style.display = 'none';
+        document.getElementById('edit-profile-box').style.display = 'none';
+    }
+
+    function toggleEditProfile() {
+        const box = document.getElementById('edit-profile-box');
+        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function toggleBookmark() {
+        if (!currentAnimeId) return;
+        const index = favoriteAnimes.indexOf(currentAnimeId);
+        if (index === -1) {
+            favoriteAnimes.push(currentAnimeId);
+            alert("Berhasil ditambahkan ke Favorit!");
+        } else {
+            favoriteAnimes.splice(index, 1);
+            alert("Dihapus dari Favorit!");
+        }
+        localStorage.setItem('myAnimeFavorites', JSON.stringify(favoriteAnimes));
+        updateBookmarkButtonUI();
+    }
+
+    function updateBookmarkButtonUI() {
+        const btn = document.getElementById('bookmark-btn');
+        if (!btn) return;
+        const isFav = favoriteAnimes.includes(currentAnimeId);
+        btn.innerText = isFav ? "❤️ Tersimpan di Favorit" : "🔖 Tambah ke Favorit";
+        btn.style.background = isFav ? "#ff4757" : "#2f3542";
+    }
+
+    function toggleAuthMode() {
+    isRegisterMode = !isRegisterMode;
+    document.getElementById('auth-title').innerText = isRegisterMode ? 'REGISTER' : 'LOGIN';
+    document.getElementById('auth-btn').innerText = isRegisterMode ? 'Daftar' : 'Masuk';
+    
+    // Penyesuaian teks link di bagian bawah
+    document.getElementById('auth-toggle-prefix').innerText = isRegisterMode ? 'Sudah punya akun? ' : 'Belum punya akun? ';
+    document.getElementById('auth-toggle-text').innerText = isRegisterMode ? 'Login' : 'Register';
+}
+
+    async function handleAuth() {
+        const username = document.getElementById('auth-username').value.trim();
+        const password = document.getElementById('auth-password').value.trim();
+
+        if (!username || !password) return alert('Isi username dan password!');
+
+        const endpoint = isRegisterMode ? '/api/register' : '/api/login';
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            alert(data.message || (data.success ? 'Berhasil!' : 'Gagal'));
+
+            if (data.success && !isRegisterMode) {
+                currentUser = data.user;
+                localStorage.setItem('userSession', JSON.stringify(currentUser));
+                document.getElementById('auth-modal').style.display = 'none';
+                initUserUI();
+            } else if (data.success && isRegisterMode) {
+                toggleAuthMode();
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Gagal koneksi!");
+        }
+    }
+
+    function initUserUI() {
+        document.getElementById('display-user').innerText = currentUser.displayName || currentUser.username;
+        if (currentUser.avatar) document.getElementById('mini-avatar-img').src = currentUser.avatar;
+        
+        updateUI();
+        loadComments(); 
+        renderContinueWatchingUI();
+
+        if (currentUser.role === 'admin') {
+            const adminPanel = document.getElementById('admin-panel');
+            if (adminPanel) adminPanel.style.display = 'block';
+            loadAdminPanel();
+        }
+        attachAvatarFullscreenListeners();
+    }
+
+    function logout() {
+        // FIX: also end the server session (CSRF token is auto-attached by public/csrf.js)
+        fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            .catch(() => {})
+            .finally(() => {
+                localStorage.removeItem('userSession');
+                location.reload();
+            });
+    }
+
+    function getXpForNextLevel(lvl) { return lvl * 30; }
+    function getRankTitle(lvl) {
+    if (lvl < 20) return "Otaku Pemula";
+    if (lvl < 50) return "Siswa Akademi";
+    if (lvl < 100) return "Wibu Elite";
+    if (lvl < 200) return "Pembaca Manga";
+    if (lvl < 350) return "Wibu Legend";
+    if (lvl < 500) return "Pakar Lore";
+    if (lvl < 750) return "Absolute Wibu";
+    if (lvl < 1000) return "Tetua Anime";
+    if (lvl < 1500) return "Suhu Isekai";
+    if (lvl < 2000) return "Lord Wibu";
+    if (lvl < 3000) return "Raja Chunibyo";
+    if (lvl < 5000) return "Dewa Otaku";
+    if (lvl < 7500) return "Kaisar Anime";
+    if (lvl < 10000) return "Entitas 2D";
+    if (lvl < 15000) return "Sovereign Wibu";       
+    if (lvl < 20000) return "Archon Anime";
+    if (lvl < 35000) return "Mitos Otaku";          
+    if (lvl < 50000) return "Transcendent Wibu";
+    if (lvl < 75000) return "Overlord Anime";       
+    if (lvl < 100000) return "Omnipresent Wibu";
+    if (lvl < 150000) return "Deity of Anime";      
+    if (lvl < 200000) return "Cosmic Otaku";
+    return "Anime Sovereign";                 
+}
+
+    function updateUI() {
+        if (!currentUser) return;
+        let maxXp = getXpForNextLevel(currentUser.level || 1);
+        let percentage = ((currentUser.xp || 0) / maxXp) * 100;
+        document.getElementById('user-level').innerText = `Lvl ${currentUser.level || 1}`;
+        document.getElementById('xp-progress').style.width = `${percentage}%`;
+    }
+
+    async function addXP(amount) {
+    if (!currentUser) return;
+    currentUser.xp = (currentUser.xp || 0) + amount;
+    let maxXp = getXpForNextLevel(currentUser.level || 1);
+
+    let levelUp = false;
+    if (currentUser.xp >= maxXp) {
+        currentUser.xp -= maxXp;
+        currentUser.level = (currentUser.level || 1) + 1;
+        levelUp = true;
+    }
+    
+    updateUI();
+    localStorage.setItem('userSession', JSON.stringify(currentUser));
+
+    // KIRIM DATA KE SERVER/USERS.JSON SETIAP NAIK LEVEL ATAU SECARA BERKALA
+    try {
+        await fetch('/api/update-progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: currentUser.username,
+                xp: currentUser.xp,
+                level: currentUser.level
+            })
+        });
+    } catch (err) {
+        console.error("Gagal menyinkronkan progress ke server:", err);
+    }
+}
+
+    let activeChatUser = null;
+    let chatInterval = null;
+
+    async function openChat(targetUsername) {
+    if (!currentUser) return alert("Silakan login terlebih dahulu untuk chatting!");
+    if (currentUser.username === targetUsername) return alert("Tidak bisa chat dengan diri sendiri!");
+
+    activeChatUser = targetUsername;
+    
+    // Set awal / Loading
+    document.getElementById('chat-target-name').innerText = `@${targetUsername}`;
+    document.getElementById('chat-target-level').innerText = "Loading...";
+    
+    // Ambil data detail profil lawan bicara dari Server
+    try {
+        const res = await fetch(`/api/users/${encodeURIComponent(targetUsername)}`);
+        if (res.ok) {
+            const userData = await res.json();
+            document.getElementById('chat-target-avatar').src = userData.avatar || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10";
+            document.getElementById('chat-target-level').innerText = `Lvl ${userData.level || 1}`;
+            document.getElementById('chat-target-rank').innerText = getRankTitle(userData.level || 1);
+        }
+    } catch (err) {
+        console.error("Gagal mengambil data user chat:", err);
+    }
+
+    document.getElementById('chat-modal').style.display = 'block';
+    closeModal('publicProfileModal');
+    
+    loadChatMessages();
+
+    if (chatInterval) clearInterval(chatInterval);
+    chatInterval = setInterval(loadChatMessages, 2000);
+}
+
+    function closeChat() {
+        document.getElementById('chat-modal').style.display = 'none';
+        activeChatUser = null;
+        if (chatInterval) clearInterval(chatInterval);
+    }
+
+    function loadChatMessages() {
+        if (!activeChatUser || !currentUser) return;
+
+        fetch(`/api/chat/${currentUser.username}/${activeChatUser}`)
+            .then(res => res.json())
+            .then(messages => {
+                const box = document.getElementById('chat-box');
+                if (!box) return;
+
+                if (messages.length === 0) {
+                    box.innerHTML = '<p style="color:#666; text-align:center; margin-top:20px;">Belum ada pesan. Mulai obrolan!</p>';
+                    return;
+                }
+
+                box.innerHTML = messages.map(m => {
+                    const isMe = m.from === currentUser.username;
+                    return `
+                        <div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? '#ff4757' : '#222'}; color: #fff; padding: 6px 10px; border-radius: 6px; max-width: 80%;">
+                            <div style="font-size: 12px;">${m.text}</div>
+                            <span style="font-size: 9px; color: #ddd; display:block; text-align:right; margin-top:2px;">${m.timestamp}</span>
+                        </div>
+                    `;
+                }).join('');
+                box.scrollTop = box.scrollHeight;
+            });
+    }
+
+    function sendChatMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text || !activeChatUser) return;
+
+        fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from: currentUser.username, to: activeChatUser, text })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                input.value = '';
+                loadChatMessages();
+            }
+        });
+    }
+
+    function loadFriendList() {
+    if (!currentUser) return;
+
+    fetch(`/api/friends/list/${currentUser.username}`)
+        .then(res => res.json())
+        .then(friends => {
+            const container = document.getElementById('friend-list-container');
+            if (!container) return;
+
+            if (friends.length === 0) {
+                container.innerHTML = '<p style="color:#888; font-size:12px;">Belum memiliki teman.</p>';
+                return;
+            }
+
+            container.innerHTML = friends.map(friend => `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1c23; padding:8px 12px; border-radius:6px; margin-bottom:6px;">
+                    <!-- Klik username untuk melihat Profil -->
+                    <span style="color:#fff; font-size:13px; cursor:pointer; font-weight:bold;" onclick="openPublicProfile('${friend}')">
+                        👤 @${friend}
+                    </span>
+                    <div style="display:flex; gap:6px;">
+                        <!-- Klik tombol Chat untuk kirim pesan -->
+                        <button onclick="openChat('${friend}')" style="background:#70a1ff; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">💬 Chat</button>
+                        <button onclick="unfriendUser('${currentUser.username}', '${friend}')" style="background:#ff4757; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Hapus</button>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(err => console.error("Error loading friend list:", err));
+}
+
+    function acceptFriend(requestId) {
+        fetch('/api/friends/accept', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requestId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            loadFriendRequests();
+        });
+    }
+
+    function rejectFriend(requestId) {
+        fetch('/api/friends/reject', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requestId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            loadFriendRequests();
+        });
+    }
+    
+    async function loadAdminPanel() {
+    if (!currentUser || currentUser.role !== 'admin') return;
+
+    try {
+        // Load data banned juga untuk cek status
+        const bannedRes = await fetch('/api/admin/banned-list');
+        const bannedData = await bannedRes.json();
+        
+        const usersRes = await fetch('/api/admin/users');
+        const users = await usersRes.json();
+        const userList = document.getElementById('user-list');
+        if (!userList) return;
+
+        if (users.length === 0) {
+            userList.innerHTML = '<p style="color: #aaa;">Tidak ada data pengguna.</p>';
+            return;
+        }
+
+        userList.innerHTML = users.map(u => {
+    const banEntry = bannedData.find(b => b.username === u.username);
+    let statusBadge = '';
+    if (banEntry) {
+        if (banEntry.type === 'ban') {
+            statusBadge = '<span style="background:#ff4757; color:#fff; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px;">🚫 BANNED</span>';
+        } else if (banEntry.type === 'suspend' && !banEntry.isExpired) {
+            statusBadge = `<span style="background:#eccc68; color:#000; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px;">⏳ SUSPENDED</span>`;
+        }
+    }
+    
+    return `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0d0e12; padding: 10px; border-radius: 6px; margin-top: 8px; border: 1px solid #333; cursor: pointer;" 
+             onclick="openPublicProfile('${u.username}')">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <!-- TAMBAHKAN INI: AVATAR USER -->
+                <img src="${u.avatar || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10'}" 
+                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #ff4757;">
+                <div>
+                    <b style="color: #fff;">${u.displayName || u.username}</b> 
+                    <small style="color: #888;">(@${u.username}) - ${u.role}</small>
+                    ${statusBadge}
+                    <br><small style="color: #2ed573;">Lvl ${u.level || 1} | ${u.xp || 0} XP</small>
+                </div>
+            </div>
+            ${u.username !== 'admin' ? `<button onclick="event.stopPropagation(); deleteUser('${u.username}')" style="background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Hapus User</button>` : '<span style="color: #ff4757; font-size: 12px;">Main Admin</span>'}
+        </div>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error("Gagal memuat panel admin:", err);
+    }
+}
+
+// FUNGSI UNTUK MENGHAPUS AKUN USER OLEH ADMIN
+function deleteUser(username) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus akun ${username}?`)) return;
+
+    fetch(`/api/admin/users/${username}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            loadAdminPanel(); // Refresh daftar user setelah dihapus
+        })
+        .catch(err => console.error("Error deleting user:", err));
+}
+    
+    // Fungsi Unfriend
+async function unfriendUser(user1, user2) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus @${user2} dari daftar teman?`)) return;
+
+    try {
+        const res = await fetch('/api/friends/unfriend', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user1, user2 })
+        });
+        const data = await res.json();
+        alert(data.message);
+        
+        // Refresh profil publik jika sedang dibuka
+        openPublicProfile(user2);
+        // Refresh daftar teman di profil sendiri
+        loadFriendList();
+    } catch (err) {
+        console.error("Error unfriend:", err);
+    }
+}
+
+// Fungsi Load Friendlist (Daftar Teman)
+function loadFriendList() {
+    if (!currentUser) return;
+
+    fetch(`/api/friends/list/${currentUser.username}`)
+        .then(res => res.json())
+        .then(friends => {
+            const container = document.getElementById('friend-list-container');
+            if (!container) return;
+
+            if (friends.length === 0) {
+                container.innerHTML = '<p style="color:#888; font-size:12px;">Belum memiliki teman.</p>';
+                return;
+            }
+
+            container.innerHTML = friends.map(friend => `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1c23; padding:8px 12px; border-radius:6px; margin-bottom:6px;">
+                    <span style="color:#fff; font-size:13px; cursor:pointer;" onclick="openPublicProfile('${friend}')">@${friend}</span>
+                    <div style="display:flex; gap:6px;">
+                        <button onclick="openChat('${friend}')" style="background:#70a1ff; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">💬 Chat</button>
+                        <button onclick="unfriendUser('${currentUser.username}', '${friend}')" style="background:#ff4757; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Hapus</button>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(err => console.error("Error loading friend list:", err));
+}
+    
+    async function saveProfileChanges() {
+    if (!currentUser) {
+        alert("Silakan login terlebih dahulu!");
+        return;
+    }
+
+    // 1. Ambil nilai input dari elemen HTML yang benar
+    const displayName = document.getElementById('edit-displayName-input').value.trim();
+    const bio = document.getElementById('edit-bio-input').value.trim();
+    const avatar = document.getElementById('edit-avatar-base64').value || currentUser.avatar;
+    const banner = document.getElementById('edit-banner-base64').value || currentUser.banner;
+
+    if (!currentUser) {
+        alert("Silakan login terlebih dahulu!");
+        return;
+    }
+
+    // 2. Buat objek data yang akan dikirim ke server
+    const updatedData = {
+        username: currentUser.username,
+        displayName: displayName,
+        bio: bio,
+        avatar: avatar,
+        banner: banner
+    };
+
+    try {
+        const response = await fetch('/api/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Update session lokal & localStorage
+            currentUser = result.user;
+            localStorage.setItem('userSession', JSON.stringify(currentUser));
+            
+            // Perbarui UI profil secara langsung tanpa refresh
+            document.getElementById('p-displayName').innerText = currentUser.displayName;
+            document.getElementById('p-bio').innerText = currentUser.bio || "Belum ada bio profile.";
+            if (currentUser.avatar) {
+                document.getElementById('p-avatar-img').src = currentUser.avatar;
+                document.getElementById('mini-avatar-img').src = currentUser.avatar;
+            }
+            if (currentUser.banner) {
+                document.getElementById('p-banner-bg').style.backgroundImage = `url('${currentUser.banner}')`;
+            }
+            
+            updateUI();
+            toggleEditProfile(); // Tutup form edit
+            alert("Profil berhasil disimpan!");
+        } else {
+            alert("Gagal menyimpan profil: " + (result.error || result.message));
+        }
+    } catch (error) {
+        console.error("Error saving profile:", error);
+        alert("Terjadi kesalahan koneksi ke server.");
+    }
+}
+    
+  
+
+// Simpan episode terakhir ke akun di server
+function saveContinueWatching(anime, epIndex) {
+    if (!currentUser) return; // Jangan simpan riwayat jika user belum login
+
+    const ep = anime.episodes[epIndex];
+    const cwData = {
+        animeId: anime.id,
+        animeTitle: anime.title,
+        epIndex: epIndex,
+        epTitle: ep.title,
+        epFile: ep.file,
+        poster: anime.poster
+    };
+
+    const historyData = {
+        id: anime.id,
+        title: anime.title,
+        cover: anime.poster,
+        lastEpisode: epIndex,
+        updatedAt: new Date().getTime()
+    };
+
+    // Inisialisasi array watchHistory jika belum ada
+    if (!currentUser.watchHistory) {
+        currentUser.watchHistory = [];
+    }
+
+    // Hapus entry lama jika anime yang sama ditonton kembali (agar posisinya naik ke paling atas)
+    const existingIndex = currentUser.watchHistory.findIndex(item => item.id === anime.id);
+    if (existingIndex !== -1) {
+        currentUser.watchHistory.splice(existingIndex, 1);
+    }
+    
+    // Tambahkan riwayat terbaru di urutan pertama
+    currentUser.watchHistory.unshift(historyData);
+    currentUser.continueWatching = cwData;
+
+    // Perbarui sesi lokal browser
+    localStorage.setItem('userSession', JSON.stringify(currentUser));
+
+    // Kirim data riwayat & continue watching ke server Node.js/Express
+    fetch('/api/save-continue-watching', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: currentUser.username,
+            cwData: cwData,
+            watchHistory: currentUser.watchHistory
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        renderContinueWatchingUI();
+    })
+    .catch(err => console.error("Gagal menyimpan progress ke server:", err));
+}
+
+// Tambahkan fungsi playAnime agar Riwayat Nonton bisa diputar
+function playAnime(animeId, epIndex) {
+    const anime = animeSeriesData.find(a => a.id === animeId);
+    if (anime && anime.episodes[epIndex]) {
+        const ep = anime.episodes[epIndex];
+        playVideo(ep.file, `${anime.title} - ${ep.title}`, anime.id, epIndex);
+    }
+}
+
+function renderContinueWatchingUI() {
+    const cwBox = document.getElementById('continue-watching-box');
+    const cwTitle = document.getElementById('cw-title');
+    const cwPlayBtn = document.getElementById('cw-play-btn');
+    const cwPoster = document.getElementById('cw-poster');
+
+    if (!cwBox) return;
+
+    if (currentUser && currentUser.continueWatching) {
+        const cw = currentUser.continueWatching;
+        cwBox.style.display = 'block';
+        
+        if (cwTitle) {
+            cwTitle.innerText = `${cw.animeTitle} - ${cw.epTitle}`;
+        }
+        if (cwPoster) {
+            cwPoster.src = cw.poster || '';
+        }
+        if (cwPlayBtn) {
+            cwPlayBtn.onclick = () => {
+                playVideo(cw.epFile, `${cw.animeTitle} - ${cw.epTitle}`, cw.animeId, cw.epIndex);
+            };
+        }
+    } else {
+        cwBox.style.display = 'none';
+    }
+}
+
+// 3. Panggil renderContinueWatchingUI saat halaman selesai dimuat
+window.addEventListener('DOMContentLoaded', () => {
+    renderContinueWatchingUI();
+});
+
+let currentSlideIndex = 0;
+let autoSlideTimer = null;
+
+function initSlider() {
+    const track = document.getElementById('slider-track');
+    if (!track) return;
+    
+    const slides = track.querySelectorAll('.slide');
+    const dotsContainer = document.getElementById('slider-dots');
+    
+    if (slides.length === 0) return;
+
+    // Buat indikator titik (dots) secara dinamis
+    dotsContainer.innerHTML = '';
+    slides.forEach((_, idx) => {
+        const dot = document.createElement('div');
+        dot.className = `dot ${idx === 0 ? 'active' : ''}`;
+        dot.onclick = () => goToSlide(idx);
+        dotsContainer.appendChild(dot);
+    });
+
+    // Jalankan geser otomatis setiap 4 detik
+    startAutoSlide();
+
+    // Dukungan Touch / Swipe Geser Manual di Layar HP
+    let startX = 0;
+    track.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+    });
+
+    track.addEventListener('touchend', (e) => {
+        let endX = e.changedTouches[0].clientX;
+        if (startX - endX > 50) moveSlide(1);  // Swipe Kiri -> Next
+        if (endX - startX > 50) moveSlide(-1); // Swipe Kanan -> Prev
+    });
+}
+
+function updateSlidePosition() {
+    const track = document.getElementById('slider-track');
+    const dots = document.querySelectorAll('.dot');
+    const totalSlides = track.querySelectorAll('.slide').length;
+
+    if (totalSlides === 0) return;
+
+    track.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+
+    // Update kelas active pada dots
+    dots.forEach((dot, idx) => {
+        dot.classList.toggle('active', idx === currentSlideIndex);
+    });
+}
+
+function moveSlide(direction) {
+    const totalSlides = document.querySelectorAll('.slide').length;
+    currentSlideIndex = (currentSlideIndex + direction + totalSlides) % totalSlides;
+    updateSlidePosition();
+    resetAutoSlide();
+}
+
+function goToSlide(index) {
+    currentSlideIndex = index;
+    updateSlidePosition();
+    resetAutoSlide();
+}
+
+function startAutoSlide() {
+    autoSlideTimer = setInterval(() => {
+        moveSlide(1);
+    }, 4000); // 4000ms = 4 Detik
+}
+
+function resetAutoSlide() {
+    clearInterval(autoSlideTimer);
+    startAutoSlide();
+}
+
+// Inisialisasi slider saat halaman selesai dimuat
+window.addEventListener('DOMContentLoaded', () => {
+    initSlider();
+});
+    
+    function openHistoryPage() {
+    const historyGrid = document.getElementById('history-grid');
+    historyGrid.innerHTML = ''; // Bersihkan isi grid terlebih dahulu
+
+    const historyList = currentUser?.watchHistory || [];
+
+    if (historyList.length === 0) {
+        historyGrid.innerHTML = '<p style="color:#aaa; font-size:12px;">Belum ada riwayat nonton.</p>';
+    } else {
+        // Loop setiap anime yang ada di history dan tampilkan sebagai kartu
+        historyList.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            card.onclick = () => {
+                closeModal('history-modal');
+                playAnime(item.id, item.lastEpisode); // Lanjutkan pemutaran video
+            };
+
+            card.innerHTML = `
+                <img src="${item.cover}" alt="${item.title}">
+                <div class="history-card-info">
+                    <strong style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</strong>
+                    <span style="color:#ff4757;">Eps ${item.lastEpisode + 1}</span>
+                </div>
+            `;
+            historyGrid.appendChild(card);
+        });
+    }
+
+    // Tampilkan modal/halaman history
+    document.getElementById('history-modal').style.display = 'flex';
+}
+
+function switchTab(tabName) {
+    // 1. Ubah tampilan status 'active' pada tombol bottom nav
+    const navItems = document.querySelectorAll('.bottom-nav .nav-item');
+    navItems.forEach(item => item.classList.remove('active'));
+
+    // 2. Logika aksi berdasarkan tab yang diklik
+    if (tabName === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (tabName === 'profile') {
+        openProfileModal(); // Memanggil fungsi modal profil yang sudah ada
+    } else if (tabName === 'library') {
+        openHistoryPage(); // Buka halaman riwayat/library
+    } else {
+        alert('Fitur ' + tabName + ' akan segera hadir!');
+    }
+}
+function openCatalogModal() {
+    const catalogList = document.getElementById('catalog-list');
+    if (!catalogList) return;
+
+    catalogList.innerHTML = animeSeriesData.map(anime => `
+        <div style="display: flex; gap: 10px; background: #0d0e12; padding: 8px; border-radius: 6px; align-items: center; cursor: pointer;" onclick="closeModal('catalog-modal'); openDetailModal(${anime.id});">
+            <img src="${anime.poster}" style="width: 45px; height: 60px; object-fit: cover; border-radius: 4px;">
+            <div>
+                <b style="color: #fff; font-size: 13px; display: block;">${anime.title}</b>
+                <small style="color: #888; font-size: 11px;">${anime.season} • ${anime.episodes.length} Eps</small>
+            </div>
+        </div>
+    `).join('');
+
+    document.getElementById('catalog-modal').style.display = 'flex';
+}
+
+function switchTab(tabName) {
+    const navItems = document.querySelectorAll('.bottom-nav .nav-item');
+    navItems.forEach(item => item.classList.remove('active'));
+
+    if (tabName === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (tabName === 'schedule') {
+        document.getElementById('schedule-modal').style.display = 'flex';
+    } else if (tabName === 'catalog') {
+        openCatalogModal();
+    } else if (tabName === 'profile') {
+        openProfileModal();
+    } else if (tabName === 'library') {
+        openHistoryPage();
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const animeId = urlParams.get('animeId');
+    const epIndex = urlParams.get('epIndex');
+
+    if (animeId && epIndex !== null) {
+        // Otomatis putar video dari Library
+        playAnime(parseInt(animeId), parseInt(epIndex));
+    }
+});
+// ==========================================
+// FUNGSI ADMIN UNTUK BAN & SUSPEND
+// ==========================================
+
+let currentAdminTab = 'users';
+
+function switchAdminTab(tab) {
+    currentAdminTab = tab;
+    
+    const usersTab = document.getElementById('admin-tab-users');
+    const bannedTab = document.getElementById('admin-tab-banned');
+    const usersContent = document.getElementById('admin-users-content');
+    const bannedContent = document.getElementById('admin-banned-content');
+    
+    if (tab === 'users') {
+        usersTab.classList.add('active');
+        bannedTab.classList.remove('active');
+        usersContent.style.display = 'block';
+        bannedContent.style.display = 'none';
+        loadAdminPanel(); // Refresh daftar user
+    } else {
+        usersTab.classList.remove('active');
+        bannedTab.classList.add('active');
+        usersContent.style.display = 'none';
+        bannedContent.style.display = 'block';
+        loadBannedList(); // Load daftar banned
+    }
+}
+
+// 1. SUSPEND USER
+async function adminSuspendUser() {
+    const username = document.getElementById('ban-username-input').value.trim();
+    const duration = document.getElementById('suspend-duration-input').value.trim() || 24;
+    
+    if (!username) return alert('Masukkan username!');
+    if (!confirm(`Suspend user @${username} selama ${duration} jam?`)) return;
+
+    try {
+        const res = await fetch('/api/admin/suspend', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, duration })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) {
+            document.getElementById('ban-username-input').value = '';
+            document.getElementById('suspend-duration-input').value = '';
+            loadBannedList();
+            loadAdminPanel();
+        }
+    } catch (err) {
+        alert('Gagal menghubungi server!');
+    }
+}
+
+// 2. BAN USER
+async function adminBanUser() {
+    const username = document.getElementById('ban-username-input').value.trim();
+    if (!username) return alert('Masukkan username!');
+    if (!confirm(`⚠️ BAN permanen user @${username}? Tindakan ini tidak dapat dibatalkan secara otomatis!`)) return;
+
+    try {
+        const res = await fetch('/api/admin/ban', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) {
+            document.getElementById('ban-username-input').value = '';
+            loadBannedList();
+            loadAdminPanel();
+        }
+    } catch (err) {
+        alert('Gagal menghubungi server!');
+    }
+}
+
+// 3. UNBAN USER
+async function adminUnbanUser() {
+    const username = document.getElementById('ban-username-input').value.trim();
+    if (!username) return alert('Masukkan username!');
+    if (!confirm(`Unban user @${username}?`)) return;
+
+    try {
+        const res = await fetch('/api/admin/unban', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) {
+            document.getElementById('ban-username-input').value = '';
+            loadBannedList();
+            loadAdminPanel();
+        }
+    } catch (err) {
+        alert('Gagal menghubungi server!');
+    }
+}
+
+// 4. LOAD BANNED LIST
+async function loadBannedList() {
+    try {
+        const res = await fetch('/api/admin/banned-list');
+        const data = await res.json();
+        const container = document.getElementById('banned-list-container');
+        
+        if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = '<p style="color: #888;">✅ Tidak ada user yang di-ban atau di-suspend.</p>';
+            return;
+        }
+
+  container.innerHTML = `
+    <div class="banned-table-wrapper">
+        <table class="banned-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Display</th>
+                    <th>Level</th>
+                    <th>Status</th>
+                    <th>Waktu</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map(b => `
+                    <tr>
+                        <td><strong>@${b.username}</strong></td>
+                        <td>${b.displayName}</td>
+                        <td>Lvl ${b.level}</td>
+                        <td>
+                            <span class="status-badge ${b.type === 'ban' ? 'banned' : b.isExpired ? 'expired' : 'suspended'}">
+                                ${b.type === 'ban' ? '🚫 BANNED' : b.isExpired ? '✅ Expired' : '⏳ Suspended'}
+                            </span>
+                            ${b.type === 'suspend' && !b.isExpired ? `<br><small style="color:#888; font-size:9px;">Sampai ${new Date(b.until).toLocaleString('id-ID')}</small>` : ''}
+                        </td>
+                        <td style="font-size:10px; color:#888;">
+                            ${b.type === 'ban' ? `Di-ban: ${new Date(b.bannedAt).toLocaleString('id-ID')}` : `Di-suspend: ${new Date(b.suspendedAt).toLocaleString('id-ID')}`}
+                        </td>
+                        <td>
+                            <button onclick="quickUnban('${b.username}')" style="background:#2ed573; color:#000; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:10px;">Unban</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>
+`;
+    } catch (err) {
+        console.error(err);
+        document.getElementById('banned-list-container').innerHTML = '<p style="color:#ff4757;">Gagal memuat data banned.</p>';
+    }
+}
+
+// 5. QUICK UNBAN (tombol di tabel)
+async function quickUnban(username) {
+    if (!confirm(`Unban user @${username}?`)) return;
+    try {
+        const res = await fetch('/api/admin/unban', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) loadBannedList();
+    } catch (err) {
+        alert('Gagal menghubungi server!');
+    }
+}
+// --- Fungsi Fullscreen Avatar ---
+function openFullscreenAvatar(imgSrc) {
+    // Hapus overlay jika sudah ada
+    const existingOverlay = document.getElementById('fullscreen-avatar-overlay');
+    if (existingOverlay) existingOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'fullscreen-avatar-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.92);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 999999;
+        cursor: pointer;
+    `;
+    overlay.onclick = () => overlay.remove();
+
+    const img = document.createElement('img');
+    img.src = imgSrc;
+    img.style.cssText = `
+        max-width: 90%;
+        max-height: 90%;
+        border-radius: 12px;
+        object-fit: contain;
+        box-shadow: 0 0 30px rgba(255, 71, 87, 0.3);
+        border: 2px solid #ff4757;
+    `;
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
+}
+
+// Menambahkan event listener ke semua avatar (di profil sendiri & profil publik)
+// Panggil ini saat UI user sudah diinisialisasi
+function attachAvatarFullscreenListeners() {
+    // HANYA target avatar yang ada di dalam modal/profile, BUKAN mini-avatar di header
+    document.querySelectorAll('#profile-modal .profile-avatar, #publicProfileModal .profile-avatar').forEach(el => {
+        el.removeEventListener('click', avatarClickHandler);
+        el.addEventListener('click', avatarClickHandler);
+    });
+}
+
+function avatarClickHandler(e) {
+    e.stopPropagation(); // Mencegah event bubbling ke parent
+    const imgSrc = this.src;
+    if (imgSrc) openFullscreenAvatar(imgSrc);
+}
+
+// Panggil attachAvatarFullscreenListeners di dalam initUserUI()
+// Dan juga setelah render profil public di openPublicProfile
+
+</script>
+
+<!-- KOTAK CHAT POPUP -->
+<div id="chat-modal" style="display:none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: #0d0e12; border: 1px solid #333; border-radius: 8px; padding: 12px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+    
+    <!-- HEADER CHAT DENGAN PFP & LEVEL/RANK -->
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #222; padding-bottom: 8px;">
+        <div style="display:flex; align-items:center; gap: 8px;">
+            <img id="chat-target-avatar" src="https://via.placeholder.com/35" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid #ff4757;">
+            <div style="display:flex; flex-direction:column;">
+                <b id="chat-target-name" style="color:#fff; font-size: 13px;">@username</b>
+                <div style="display:flex; gap: 5px; align-items: center;">
+                    <span id="chat-target-level" style="color:#2ed573; font-size: 10px; font-weight: bold;">Lvl 1</span>
+                    <span id="chat-target-rank" style="background:#ff4757; color:#fff; font-size: 9px; padding: 1px 4px; border-radius: 3px;">Otaku Pemula</span>
+                </div>
+            </div>
+        </div>
+        <button onclick="closeChat()" style="background:transparent; color:#888; border:none; cursor:pointer; font-weight:bold;">✖</button>
+    </div>
+    
+    <div id="chat-box" style="height: 220px; overflow-y: auto; margin: 10px 0; font-size: 12px; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;"></div>
+    
+    <div style="display:flex; gap: 6px;">
+        <input type="text" id="chat-input" placeholder="Tulis pesan..." style="flex:1; background:#1a1c23; border:1px solid #333; color:#fff; padding: 6px 10px; border-radius: 4px; font-size: 12px;">
+        <button onclick="sendChatMessage()" style="background:#ff4757; color:#fff; border:none; padding: 6px 12px; border-radius: 4px; cursor:pointer; font-size: 12px; font-weight:bold;">Kirim</button>
+    </div>
+</div>
+
+<!-- MODAL SCHEDULE -->
+<div id="schedule-modal" class="profile-modal">
+    <div class="profile-card-box" style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="color: #ff4757;">📅 Jadwal Rilis Anime</h3>
+            <button class="close-btn" onclick="closeModal('schedule-modal')" style="position: static;">&times;</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <div style="background: #0d0e12; padding: 10px; border-radius: 6px; border-left: 3px solid #ff4757;">
+                <b style="color: #ff4757;">Senin:</b> Attack on Titan S4
+            </div>
+            <div style="background: #0d0e12; padding: 10px; border-radius: 6px; border-left: 3px solid #ff4757;">
+                <b style="color: #ff4757;">Rabu:</b> Doraemon Series
+            </div>
+            <div style="background: #0d0e12; padding: 10px; border-radius: 6px; border-left: 3px solid #ff4757;">
+                <b style="color: #ff4757;">Sabtu:</b> Summer Ghost Movie
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CATALOG -->
+<div id="catalog-modal" class="profile-modal">
+    <div class="profile-card-box" style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="color: #ff4757;">📚 Katalog Anime</h3>
+            <button class="close-btn" onclick="closeModal('catalog-modal')" style="position: static;">&times;</button>
+        </div>
+        <div id="catalog-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto;">
+            <!-- Diisi secara otomatis oleh JavaScript -->
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <script src="csrf.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d0e12">
+    <title>Schedule - AnimeHub</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-main: #0d0e12;
+            --bg-card: rgba(22, 25, 35, 0.7);
+            --accent: #ff4757;
+            --accent-glow: rgba(255, 71, 87, 0.35);
+            --live-color: #2ed573;
+            --text-main: #f3f4f6;
+            --text-muted: #888888;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --radius-lg: 12px;
+            --radius-md: 8px;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            padding: 15px; 
+            padding-bottom: 80px; 
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .header-title {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .time-zone {
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 5px 10px;
+            border-radius: 20px;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+
+        /* DAY FILTER TABS */
+        .day-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            scrollbar-width: none;
+        }
+
+        .day-tabs::-webkit-scrollbar { display: none; }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        /* SECTION */
+        .day-section {
+            margin-bottom: 20px;
+            transition: opacity 0.3s ease;
+        }
+
+        .day-section.hidden {
+            display: none;
+        }
+
+        .day-header {
+            background: #1a1c23;
+            padding: 10px 15px;
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 15px;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .day-header .count {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        /* CARD ANIME */
+        .anime-card {
+            background: #16181f;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 12px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.2s ease;
+        }
+
+        .anime-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .poster {
+            width: 55px;
+            height: 70px;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+            background-color: #1f2330;
+            flex-shrink: 0;
+        }
+
+        .anime-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .anime-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .anime-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .episode-badge {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #d1d5db;
+        }
+
+        .time-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+
+        .time-badge.live {
+            background: rgba(46, 213, 115, 0.1);
+            color: var(--live-color);
+            border: 1px solid rgba(46, 213, 115, 0.2);
+        }
+
+        .time-badge.upcoming {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--live-color);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--live-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        /* --- BOTTOM NAVBAR (SAMA DENGAN KODE AWAL KAMU) --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #1a1c23;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #2f3542;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #888;
+            text-decoration: none; /* MENGHAPUS GARIS BAWAH PADA LINK */
+            font-size: 11px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #ff4757;
+            text-decoration: none; /* MEMASTIKAN GARIS BAWAH TETAP HILANG SAAT HOVER/ACTIVE */
+        }
+
+        .nav-item i {
+            font-size: 18px;
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="header">
+        <h2 class="header-title">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Jadwal Rilis Anime</span>
+        </h2>
+        <div class="time-zone"><i class="far fa-clock"></i> WIB</div>
+    </header>
+
+    <!-- TOMBOL FILTER HARI (BISA DIKLIK) -->
+    <div class="day-tabs">
+        <button class="tab-btn active" data-day="semua">Semua</button>
+        <button class="tab-btn" data-day="senin">Senin</button>
+        <button class="tab-btn" data-day="selasa">Selasa</button>
+        <button class="tab-btn" data-day="rabu">Rabu</button>
+        <button class="tab-btn" data-day="kamis">Kamis</button>
+        <button class="tab-btn" data-day="jumat">Jumat</button>
+        <button class="tab-btn" data-day="sabtu">Sabtu</button>
+        <button class="tab-btn" data-day="minggu">Minggu</button>
+    </div>
+
+    <!-- HARI SENIN -->
+    <div class="day-section" data-day="senin">
+        <div class="day-header">
+            <span>Senin</span>
+            <span class="count">1 Anime</span>
+        </div>
+        
+        <!-- Contoh Anime 1 -->
+        <div class="anime-card">
+            <img class="poster" src="Poster Anime/Aot_FinalChapters.jpg" alt="Poster">
+            <div class="anime-info">
+                <div class="anime-title">Attack on Titan Final Season</div>
+                <div class="anime-meta">
+                    <span class="episode-badge">Eps 12</span>
+                    <span>Action, Drama</span>
+                </div>
+            </div>
+            <div class="time-badge upcoming">
+                <i class="far fa-clock"></i> 22:00 WIB
+            </div>
+        </div>
+
+        <!-- UNTUK TAMBAH ANIME SENIN, TEMPELKAN <div class="anime-card">...</div> DI SINI -->
+    </div>
+
+    <!-- HARI MINGGU -->
+    <div class="day-section" data-day="minggu">
+        <div class="day-header">
+            <span>Minggu</span>
+            <span class="count">1 Anime</span>
+        </div>
+        
+        <!-- Contoh Anime 2 -->
+        <div class="anime-card">
+            <img class="poster" src="Poster Anime/DoraemonS.jpeg" alt="Poster">
+            <div class="anime-info">
+                <div class="anime-title">Doraemon Series</div>
+                <div class="anime-meta">
+                    <span class="episode-badge">Eps 1042</span>
+                    <span>Comedy, Sci-Fi</span>
+                </div>
+            </div>
+            <div class="time-badge live">
+                <span class="live-dot"></span> 08:00 WIB
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVBAR ORIGINAL (SAMA PERSIS KODE AWAL KAMU) -->
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="schedule.html" class="nav-item active">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Schedule</span>
+        </a>
+        <a href="catalog.html" class="nav-item">
+            <i class="fas fa-book"></i>
+            <span>Catalog</span>
+        </a>
+        <a href="library.html" class="nav-item">
+            <i class="fas fa-bookmark"></i>
+            <span>Library</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <!-- SCRIPT AGAR TOMBOL HARI BISA DIKLIK -->
+    <script>
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                const selectedDay = button.getAttribute('data-day');
+                const sections = document.querySelectorAll('.day-section');
+
+                sections.forEach(section => {
+                    if (selectedDay === 'semua' || section.getAttribute('data-day') === selectedDay) {
+                        section.classList.remove('hidden');
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

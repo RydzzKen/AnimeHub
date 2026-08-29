@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <script src="csrf.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#121212">
+    <title>Catalog A-Z - AnimeHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0d0e12;
+            --card-bg: #1a1c23;
+            --accent-color: #ff4757;
+            --accent-glow: rgba(255, 71, 87, 0.3);
+            --text-muted: #8a8d9b;
+            --border-color: #2f3542;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: #fff; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 15px; 
+            padding-bottom: 80px; 
+        }
+
+        .header-title {
+            color: #ffffff;
+            font-size: 22px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- CONTROLS (SEARCH & FILTER) --- */
+        .controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 12px 10px 38px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-select {
+            flex: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: #ccc;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* --- CATALOG ITEM DESIGN --- */
+        .catalog-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .catalog-item {
+            background: var(--card-bg);
+            padding: 10px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .catalog-item:hover {
+            background: #252834;
+            border-color: var(--border-color);
+            transform: translateY(-1px);
+        }
+
+        .catalog-item:active {
+            transform: scale(0.99);
+        }
+
+        .catalog-item img {
+            width: 50px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 6px;
+            background: #2f3542;
+        }
+
+        .catalog-info {
+            flex: 1;
+        }
+
+        .catalog-info h4 {
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .badge-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge {
+            background: #2f3542;
+            color: var(--text-muted);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .badge.eps {
+            color: var(--accent-color);
+            background: rgba(255, 71, 87, 0.15);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* --- NAVBAR ASLI KAMU (TIDAK DIUBAH SAMA SEKALI) --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #1a1c23;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #2f3542;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #888;
+            text-decoration: none; /* MENGHAPUS GARIS BAWAH PADA LINK */
+            font-size: 11px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #ff4757;
+            text-decoration: none; /* MEMASTIKAN GARIS BAWAH TETAP HILANG SAAT HOVER/ACTIVE */
+        }
+
+        .nav-item i {
+            font-size: 18px;
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title"><i class="fas fa-book"></i> Katalog A-Z</h2>
+
+    <!-- SEARCH & FILTERING BARU -->
+    <div class="controls-wrapper">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Cari anime..." oninput="filterAndRender()">
+        </div>
+        <div class="filter-group">
+            <select id="sort-order" class="filter-select" onchange="filterAndRender()">
+                <option value="asc">Urutan A-Z</option>
+                <option value="desc">Urutan Z-A</option>
+            </select>
+            <select id="filter-type" class="filter-select" onchange="filterAndRender()">
+                <option value="all">Semua Tipe</option>
+                <option value="Season">Season</option>
+                <option value="Movie">Movie</option>
+                <option value="Series">Series</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- CATALOG LIST -->
+    <div id="catalog-list" class="catalog-container"></div>
+
+    <!-- NAVBAR ASLI KAMU (SAMA PERSIS) -->
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="schedule.html" class="nav-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Schedule</span>
+        </a>
+        <a href="catalog.html" class="nav-item active">
+            <i class="fas fa-book"></i>
+            <span>Catalog</span>
+        </a>
+        <a href="library.html" class="nav-item">
+            <i class="fas fa-bookmark"></i>
+            <span>Library</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <script>
+        const animeSeriesData = [
+            { id: 5, title: "Attack on Titan S4", poster: "Poster Anime/Aot_S4.jpg", season: "Season 4", totalEps: 16 },
+            { id: 1, title: "Doraemon Series", poster: "Poster Anime/DoraemonS.jpeg", season: "Series", totalEps: 2 },
+            { id: 9, title: "Summer Ghost", poster: "Poster Anime/SummerGhost.jpg", season: "Movie", totalEps: 1 },
+            { id: 2, title: "Attack on Titan", poster: "Poster Anime/Aot_s1.webp", season: "Season 1", totalEps: 25 },
+            { id: 3, title: "Attack on Titan S2", poster: "Poster Anime/Aot_s2.webp", season: "Season 2", totalEps: 12 },
+            { id: 4, title: "Attack on Titan S3", poster: "Poster Anime/Aot_s3.jpeg", season: "Season 3", totalEps: 22 },
+            { id: 6, title: "Attack on Titan S4: Part 2", poster: "Poster Anime/Aot_S4_Part2.jpg", season: "Season 4", totalEps: 12 },
+            { id: 7, title: "Attack on Titan: Final Chapters", poster: "Poster Anime/Aot_FinalChapters.jpg", season: "Final Chapters", totalEps: 2 },
+            { id: 8, title: "Stand By Me Doraemon - Movie", poster: "Poster Anime/Stand By Me Doraemon.jpg", season: "Movie", totalEps: 1 },
+        ];
+
+        function filterAndRender() {
+            const list = document.getElementById('catalog-list');
+            const searchKeyword = document.getElementById('search-input').value.toLowerCase();
+            const sortOrder = document.getElementById('sort-order').value;
+            const filterType = document.getElementById('filter-type').value;
+
+            // 1. Filtering
+            let filteredData = animeSeriesData.filter(anime => {
+                const matchSearch = anime.title.toLowerCase().includes(searchKeyword);
+                const matchType = filterType === 'all' || anime.season.toLowerCase().includes(filterType.toLowerCase());
+                return matchSearch && matchType;
+            });
+
+            // 2. Sorting
+            filteredData.sort((a, b) => {
+                return sortOrder === 'asc' 
+                    ? a.title.localeCompare(b.title) 
+                    : b.title.localeCompare(a.title);
+            });
+
+            // 3. Render Kosong
+            if (filteredData.length === 0) {
+                list.innerHTML = `<div class="empty-state">Anime tidak ditemukan...</div>`;
+                return;
+            }
+
+            // 4. Render HTML
+            list.innerHTML = filteredData.map(anime => `
+                <div class="catalog-item" onclick="openAnimeDetail(${anime.id})">
+                    <img src="${anime.poster}" alt="${anime.title}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50x70?text=Anime';">
+                    <div class="catalog-info">
+                        <h4>${anime.title}</h4>
+                        <div class="badge-container">
+                            <span class="badge">${anime.season}</span>
+                            <span class="badge eps">${anime.totalEps} Episode</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: #444; font-size: 12px;"></i>
+                </div>
+            `).join('');
+        }
+
+        function openAnimeDetail(animeId) {
+            window.location.href = `index.html?animeId=${animeId}`;
+        }
+
+        // Jalankan saat pertama kali dibuka
+        filterAndRender();
+    </script>
+</body>
+</html>

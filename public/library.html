@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <script src="csrf.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#07070a">
+    <title>AnimeHub - Library</title>
+    <!-- Google Fonts & Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #060609;
+            --card-bg: rgba(18, 18, 26, 0.65);
+            --card-hover: rgba(28, 28, 40, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(255, 255, 255, 0.18);
+            --primary: #ff0055;
+            --primary-glow: rgba(255, 0, 85, 0.5);
+            --accent: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.4);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --nav-bg: rgba(13, 13, 18, 0.85);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            padding: 24px 16px 100px;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(255, 0, 85, 0.12) 0%, rgba(0,0,0,0) 70%);
+            filter: blur(80px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -10%;
+            right: -10%;
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(0,0,0,0) 70%);
+            filter: blur(90px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 850px; 
+            margin: 0 auto; 
+        }
+
+        /* Header UI */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            padding-top: 4px;
+        }
+
+        .page-header h2 { 
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 40%, rgba(255, 255, 255, 0.5));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-icon-box {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px var(--primary-glow);
+            color: #fff;
+            font-size: 18px;
+            -webkit-text-fill-color: initial;
+        }
+
+        .section-title { 
+            font-size: 15px; 
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 32px 0 16px; 
+            color: #e2e8f0; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 18px;
+            background: linear-gradient(to bottom, var(--primary), var(--accent));
+            border-radius: 4px;
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* Continue Watching Hero Card */
+        .cw-card {
+            padding: 16px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, rgba(255, 0, 85, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%), var(--card-bg);
+        }
+
+        .cw-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(255,0,85,0.5), rgba(255,255,255,0.05), rgba(139,92,246,0.5));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .cw-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-highlight);
+            box-shadow: 0 16px 45px rgba(255, 0, 85, 0.15);
+        }
+
+        .cw-card:active {
+            transform: scale(0.98);
+        }
+
+        .cw-poster-wrapper {
+            position: relative;
+            width: 85px;
+            height: 115px;
+            flex-shrink: 0;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .cw-poster-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .cw-card:hover .cw-poster-wrapper img {
+            transform: scale(1.08);
+        }
+
+        .play-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(2px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-btn-mini {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), #ff3300);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            box-shadow: 0 0 18px var(--primary-glow);
+            padding-left: 3px;
+            transition: transform 0.3s ease;
+        }
+
+        .cw-card:hover .play-btn-mini {
+            transform: scale(1.15);
+        }
+
+        .cw-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .cw-info strong {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: -0.2px;
+        }
+
+        .cw-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 30px;
+            background: rgba(255, 0, 85, 0.12);
+            border: 1px solid rgba(255, 0, 85, 0.25);
+            color: #ff3377;
+            font-size: 12px;
+            font-weight: 700;
+            width: fit-content;
+        }
+
+        .cw-progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .cw-progress-fill {
+            height: 100%;
+            width: 65%; /* Estetika visual */
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        /* History Grid Layout */
+        .anime-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 16px; 
+        }
+
+        @media (min-width: 600px) {
+            .anime-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+        }
+
+        .history-card { 
+            position: relative;
+            overflow: hidden; 
+            cursor: pointer; 
+            display: flex;
+            flex-direction: column;
+            border-radius: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .history-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.6);
+            background: var(--card-hover);
+        }
+
+        .history-card:active {
+            transform: scale(0.96);
+        }
+
+        .history-thumb-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 140%; /* Aspect Ratio Cover */
+            overflow: hidden;
+        }
+
+        .history-card img { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            transition: transform 0.5s ease;
+        }
+
+        .history-card:hover img {
+            transform: scale(1.08);
+        }
+
+        .history-thumb-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(13, 13, 18, 0.95) 0%, transparent 60%);
+        }
+
+        .history-card-info { 
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px; 
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .history-card-info strong {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .history-ep-tag {
+            font-size: 11px;
+            color: #a78bfa;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            background: rgba(18, 18, 26, 0.3);
+        }
+
+        .empty-state i {
+            display: block;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Modern Bottom Navigation (UNTOUCHED) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #1a1c23;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #2f3542;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #888;
+            text-decoration: none; /* MENGHAPUS GARIS BAWAH PADA LINK */
+            font-size: 11px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #ff4757;
+            text-decoration: none; /* MEMASTIKAN GARIS BAWAH TETAP HILANG SAAT HOVER/ACTIVE */
+        }
+
+        .nav-item i {
+            font-size: 18px;
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="page-header">
+        <h2>
+            <div class="header-icon-box">
+                <i class="fas fa-bookmark"></i>
+            </div>
+            Library
+        </h2>
+    </div>
+    
+    <!-- SECTION CONTINUE WATCHING -->
+    <div class="section-title">Lanjutkan Menonton</div>
+    <div id="continue-container"></div>
+
+    <!-- SECTION HISTORY NONTON -->
+    <div class="section-title">Riwayat Nonton</div>
+    <div id="history-grid" class="anime-grid"></div>
+</div>
+
+<!-- BOTTOM NAVIGATION (ASLI TANPA PERUBAHAN) -->
+<nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="schedule.html" class="nav-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Schedule</span>
+        </a>
+        <a href="catalog.html" class="nav-item">
+            <i class="fas fa-book"></i>
+            <span>Catalog</span>
+        </a>
+        <a href="index.html?tab=library" class="nav-item active">
+            <i class="fas fa-bookmark"></i>
+            <span>Library</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+<script>
+    let currentUser = JSON.parse(localStorage.getItem('userSession')) || null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!currentUser) {
+            alert('Silakan login terlebih dahulu!');
+            window.location.href = 'index.html';
+            return;
+        }
+        // Sinkronisasi data terbaru dari server (users.json)
+        fetchUserData();
+    });
+
+    async function fetchUserData() {
+        try {
+            const res = await fetch(`/api/users/${encodeURIComponent(currentUser.username)}`);
+            if (res.ok) {
+                const updatedUser = await res.json();
+                currentUser = updatedUser;
+                localStorage.setItem('userSession', JSON.stringify(currentUser));
+                renderLibraryData();
+            }
+        } catch (err) {
+            console.error("Gagal mengambil data user:", err);
+            renderLibraryData(); // Fallback ke data localStorage
+        }
+    }
+
+    function renderLibraryData() {
+        // Render Continue Watching
+        const continueContainer = document.getElementById('continue-container');
+        if (currentUser.continueWatching) {
+            const cw = currentUser.continueWatching;
+            continueContainer.innerHTML = `
+                <div class="glass-card cw-card" onclick="goToPlayer(${cw.animeId}, ${cw.epIndex})">
+                    <div class="cw-poster-wrapper">
+                        <img src="${cw.poster}">
+                        <div class="play-overlay">
+                            <div class="play-btn-mini"><i class="fas fa-play"></i></div>
+                        </div>
+                    </div>
+                    <div class="cw-info">
+                        <strong>${cw.animeTitle}</strong>
+                        <div class="cw-badge">
+                            <i class="fas fa-play-circle"></i> Episode ${cw.epIndex + 1}: ${cw.epTitle}
+                        </div>
+                        <div class="cw-progress-bar">
+                            <div class="cw-progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            continueContainer.innerHTML = `
+                <div class="glass-card empty-state">
+                    <i class="fas fa-film" style="font-size:28px; margin-bottom:10px;"></i>
+                    <p>Belum ada tontonan yang menggantung.</p>
+                </div>
+            `;
+        }
+
+        // Render History List
+        const historyGrid = document.getElementById('history-grid');
+        const historyList = currentUser.watchHistory || [];
+
+        if (historyList.length === 0) {
+            historyGrid.style.display = 'block';
+            historyGrid.innerHTML = `
+                <div class="glass-card empty-state">
+                    <i class="fas fa-history" style="font-size:28px; margin-bottom:10px;"></i>
+                    <p>Belum ada riwayat nonton.</p>
+                </div>
+            `;
+        } else {
+            historyGrid.style.display = 'grid';
+            historyGrid.innerHTML = historyList.map(item => `
+                <div class="glass-card history-card" onclick="goToPlayer(${item.id}, ${item.lastEpisode})">
+                    <div class="history-thumb-wrapper">
+                        <img src="${item.cover}" alt="${item.title}" loading="lazy">
+                    </div>
+                    <div class="history-card-info">
+                        <strong title="${item.title}">${item.title}</strong>
+                        <span class="history-ep-tag"><i class="fas fa-play" style="font-size:9px;"></i> Eps ${item.lastEpisode + 1}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    function goToPlayer(animeId, epIndex) {
+        // Redirection kembali ke index.html untuk memutar video
+        window.location.href = `index.html?animeId=${animeId}&epIndex=${epIndex}`;
+    }
+</script>
+
+</body>
+</html>
