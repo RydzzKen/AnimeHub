@@ -1,7 +1,7 @@
 # AnimeHub 🎬
 
 ![Security](https://img.shields.io/badge/security-A%2B-brightgreen) 
-![Version](https://img.shields.io/badge/version-7.3.7-blue) 
+![Version](https://img.shields.io/badge/version-7.4.0-blue) 
 ![License](https://img.shields.io/badge/license-ISC-green)
 ![Node](https://img.shields.io/badge/node-18.x-green)
 ![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen)
