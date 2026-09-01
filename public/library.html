@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <script src="csrf.js"></script>
+    <script src="pwa.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#07070a">
@@ -274,10 +275,20 @@
 
         .cw-progress-fill {
             height: 100%;
-            width: 65%; /* Estetika visual */
+            width: 65%; /* Diganti inline sesuai progres */
             background: linear-gradient(90deg, var(--primary), var(--accent));
             border-radius: 10px;
             box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .cw-time {
+            font-size: 11px;
+            color: #a78bfa;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            width: fit-content;
         }
 
         /* History Grid Layout */
@@ -375,6 +386,32 @@
             gap: 5px;
         }
 
+        .hist-progress {
+            width: 100%;
+            height: 3px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .hist-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        .hist-time {
+            font-size: 10px;
+            color: #cbd5e1;
+            font-weight: 600;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
         .empty-state {
             padding: 40px 20px;
             text-align: center;
@@ -427,6 +464,67 @@
             font-size: 18px;
             margin-bottom: 3px;
         }
+
+        /* ==========================================
+           DESKTOP VIEW
+           ========================================== */
+        .desktop-nav { display: none; }
+
+        @media (min-width: 900px) {
+            .bottom-nav { display: none; }
+
+            .desktop-nav {
+                display: flex;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 60px;
+                background: #1a1c23;
+                border-bottom: 1px solid #333;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                padding: 0 24px;
+                z-index: 4000;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            }
+
+            .dn-brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                position: absolute;
+                left: 24px;
+                font-size: 17px;
+                font-weight: bold;
+                color: #fff;
+                letter-spacing: 0.5px;
+            }
+            .dn-brand img { width: 30px; height: 30px; object-fit: contain; border-radius: 6px; }
+            .dn-brand span { color: #ff4757; }
+
+            .dn-link {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #888;
+                text-decoration: none;
+                padding: 9px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                transition: all 0.2s;
+                font-family: 'Plus Jakarta Sans', sans-serif;
+            }
+            .dn-link i { font-size: 15px; }
+            .dn-link:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+            .dn-link.active { color: #ff4757; background: rgba(255, 71, 87, 0.12); }
+
+            body { padding-top: 110px; padding-bottom: 30px; }
+            .container { max-width: 1200px; }
+            .anime-grid { grid-template-columns: repeat(4, 1fr); gap: 22px; }
+        }
     </style>
 </head>
 <body>
@@ -448,6 +546,10 @@
     <!-- SECTION HISTORY NONTON -->
     <div class="section-title">Riwayat Nonton</div>
     <div id="history-grid" class="anime-grid"></div>
+
+    <!-- SECTION FAVORIT -->
+    <div class="section-title"><i class="fas fa-heart"></i> Favorit</div>
+    <div id="favorites-grid" class="anime-grid"></div>
 </div>
 
 <!-- BOTTOM NAVIGATION (ASLI TANPA PERUBAHAN) -->
@@ -474,8 +576,66 @@
         </a>
     </nav>
 
+<!-- DESKTOP NAVBAR -->
+<nav class="desktop-nav">
+    <div class="dn-brand">
+        <img src="logo.png" alt="Logo">
+        ANIME<span>HUB</span>
+    </div>
+    <a href="index.html" class="dn-link">
+        <i class="fas fa-home"></i> Home
+    </a>
+    <a href="schedule.html" class="dn-link">
+        <i class="fas fa-calendar-alt"></i> Schedule
+    </a>
+    <a href="catalog.html" class="dn-link">
+        <i class="fas fa-book"></i> Catalog
+    </a>
+    <a href="library.html" class="dn-link active">
+        <i class="fas fa-bookmark"></i> Library
+    </a>
+    <a href="profile.html" class="dn-link">
+        <i class="fas fa-user"></i> Profile
+    </a>
+</nav>
+
 <script>
     let currentUser = JSON.parse(localStorage.getItem('userSession')) || null;
+
+    // ---- Helper progres tontonan (sinkron dengan player index.html) ----
+    const PROGRESS_KEY = 'animeWatchProgress_v1';
+    function loadProgressMap() {
+        try { return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || {}; }
+        catch (e) { return {}; }
+    }
+    function formatTime(sec) {
+        if (!isFinite(sec) || sec < 0) sec = 0;
+        sec = Math.floor(sec);
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec % 60;
+        return (h > 0 ? h + ':' : '') + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+    function progressPercent(t, d) {
+        if (d > 0 && t > 0) return Math.min(100, Math.max(2, Math.round((t / d) * 100)));
+        return 0;
+    }
+    function epProgress(animeId, epIndex) {
+        let t = 0, d = 0;
+        const map = loadProgressMap();
+        const key = animeId + '_' + epIndex;
+        if (map[key] && map[key].t) {
+            t = map[key].t;
+            d = map[key].d || 0;
+        }
+        if (!t && currentUser && currentUser.continueWatching &&
+            currentUser.continueWatching.animeId === animeId &&
+            currentUser.continueWatching.epIndex === epIndex) {
+            t = currentUser.continueWatching.lastTime || 0;
+            d = currentUser.continueWatching.duration || 0;
+        }
+        return { t, d };
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
         if (!currentUser) {
@@ -485,6 +645,7 @@
         }
         // Sinkronisasi data terbaru dari server (users.json)
         fetchUserData();
+        loadFavorites();
     });
 
     async function fetchUserData() {
@@ -507,6 +668,11 @@
         const continueContainer = document.getElementById('continue-container');
         if (currentUser.continueWatching) {
             const cw = currentUser.continueWatching;
+            const cwP = epProgress(cw.animeId, cw.epIndex);
+            const cwPct = progressPercent(cwP.t, cwP.d);
+            const cwTime = cwP.t > 0
+                ? `▶ ${formatTime(cwP.t)}${cwP.d > 0 ? ' / ' + formatTime(cwP.d) : ''}`
+                : (cwP.d > 0 ? '0:00 / ' + formatTime(cwP.d) : '');
             continueContainer.innerHTML = `
                 <div class="glass-card cw-card" onclick="goToPlayer(${cw.animeId}, ${cw.epIndex})">
                     <div class="cw-poster-wrapper">
@@ -520,8 +686,9 @@
                         <div class="cw-badge">
                             <i class="fas fa-play-circle"></i> Episode ${cw.epIndex + 1}: ${cw.epTitle}
                         </div>
+                        ${cwP.t > 0 ? `<div class="cw-time"><i class="fas fa-clock"></i> ${cwTime}</div>` : ''}
                         <div class="cw-progress-bar">
-                            <div class="cw-progress-fill"></div>
+                            <div class="cw-progress-fill" style="width:${cwPct}%"></div>
                         </div>
                     </div>
                 </div>
@@ -549,23 +716,73 @@
             `;
         } else {
             historyGrid.style.display = 'grid';
-            historyGrid.innerHTML = historyList.map(item => `
-                <div class="glass-card history-card" onclick="goToPlayer(${item.id}, ${item.lastEpisode})">
-                    <div class="history-thumb-wrapper">
-                        <img src="${item.cover}" alt="${item.title}" loading="lazy">
+            historyGrid.innerHTML = historyList.map(item => {
+                const hp = epProgress(item.id, item.lastEpisode);
+                const hpPct = progressPercent(hp.t, hp.d);
+                return `
+                    <div class="glass-card history-card" onclick="goToPlayer(${item.id}, ${item.lastEpisode})">
+                        <div class="history-thumb-wrapper">
+                            <img src="${item.cover}" alt="${item.title}" loading="lazy">
+                        </div>
+                        <div class="history-card-info">
+                            <strong title="${item.title}">${item.title}</strong>
+                            <span class="history-ep-tag"><i class="fas fa-play" style="font-size:9px;"></i> Eps ${item.lastEpisode + 1}</span>
+                            ${hpPct > 0 ? `<div class="hist-progress"><div class="hist-progress-fill" style="width:${hpPct}%"></div></div>` : ''}
+                            ${hp.t > 0 ? `<span class="hist-time">▶ ${formatTime(hp.t)}${hp.d > 0 ? ' / ' + formatTime(hp.d) : ''}</span>` : ''}
+                        </div>
                     </div>
-                    <div class="history-card-info">
-                        <strong title="${item.title}">${item.title}</strong>
-                        <span class="history-ep-tag"><i class="fas fa-play" style="font-size:9px;"></i> Eps ${item.lastEpisode + 1}</span>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
     }
 
     function goToPlayer(animeId, epIndex) {
         // Redirection kembali ke index.html untuk memutar video
         window.location.href = `index.html?animeId=${animeId}&epIndex=${epIndex}`;
+    }
+
+    // ---- FAVORIT (dari database, per-akun) ----
+    async function loadFavorites() {
+        const favGrid = document.getElementById('favorites-grid');
+        try {
+            const res = await fetch('/api/favorites');
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || 'Gagal');
+            const list = data.favorites || [];
+
+            if (list.length === 0) {
+                favGrid.style.display = 'block';
+                favGrid.innerHTML = `
+                    <div class="glass-card empty-state">
+                        <i class="fas fa-heart" style="font-size:28px; margin-bottom:10px;"></i>
+                        <p>Belum ada anime favorit. Tekan 🔖 di halaman anime untuk menyimpan.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            favGrid.style.display = 'grid';
+            favGrid.innerHTML = list.map(a => `
+                <div class="glass-card history-card" onclick="goToPlayer(${a.id}, 0)">
+                    <div class="history-thumb-wrapper">
+                        <img src="${a.poster}" alt="${a.title}" loading="lazy">
+                    </div>
+                    <div class="history-card-info">
+                        <strong title="${a.title}">${a.title}</strong>
+                        <span class="history-ep-tag"><i class="fas fa-heart" style="font-size:9px; color:#ff4757;"></i> ${(a.genres || []).slice(0, 2).join(', ') || 'Favorit'}</span>
+                    </div>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error('Gagal memuat favorit:', err);
+            favGrid.style.display = 'block';
+            favGrid.innerHTML = `
+                <div class="glass-card empty-state">
+                    <i class="fas fa-heart" style="font-size:28px; margin-bottom:10px;"></i>
+                    <p>Gagal memuat favorit. Silakan login.</p>
+                </div>
+            `;
+        }
     }
 </script>
 

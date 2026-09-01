@@ -2,3 +2,13 @@ node_modules/
 .env
 npm-debug.log
 *.log
+# SQLite runtime database (jangan commit — database aktif)
+data/animehub.sqlite
+data/animehub.sqlite-wal
+data/animehub.sqlite-shm
+# legacy encrypted JSON — data asli user (jangan commit, gunakan *.sample)
+data/*.json
+# session file-store & aset temp lokal
+data/sessions/
+key.txt
+cookiesA.txt

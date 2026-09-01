@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <script src="csrf.js"></script>
+    <script src="pwa.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AnimeHub - Stream Anime Gratis</title>
@@ -226,8 +227,11 @@
         /* FORM EDIT PROFILE */
         .edit-profile-form { display: none; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
         .edit-profile-form label { font-size: 11px; color: #aaa; display: block; margin-top: 10px; text-align: left; }
-        .edit-profile-form input[type="text"], .edit-profile-form textarea { width: 100%; padding: 8px; margin-top: 4px; border-radius: 6px; border: 1px solid #333; background: #0d0e12; color: #fff; font-size: 12px; }
-        .edit-profile-form input[type="file"] { width: 100%; padding: 6px; margin-top: 4px; border-radius: 6px; background: #0d0e12; color: #aaa; font-size: 11px; border: 1px solid #333; cursor: pointer; }
+        .edit-profile-form input[type="text"],
+        .edit-profile-form input[type="password"],
+        .edit-profile-form textarea { width: 100%; padding: 8px; margin-top: 4px; border-radius: 6px; border: 1px solid #333; background: #0d0e12; color: #fff; font-size: 12px; box-sizing: border-box; }
+        .edit-profile-form input::placeholder { color: #666; }
+        .edit-profile-form input[type="file"] { width: 100%; padding: 6px; margin-top: 4px; border-radius: 6px; background: #0d0e12; color: #aaa; font-size: 11px; border: 1px solid #333; cursor: pointer; box-sizing: border-box; }
         .btn-profile { width: 100%; padding: 10px; background: #ff4757; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 13px; }
         .btn-edit-toggle { background: #333; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; float: right; }
 
@@ -284,7 +288,461 @@
 
         .placeholder-content h3 { font-size: 16px; color: #fff; margin-bottom: 4px; }
         .placeholder-content p { font-size: 12px; color: #888; }
-        
+
+        /* ===== CUSTOM VIDEO PLAYER ===== */
+        .video-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 2;
+            touch-action: none;
+        }
+
+        .video-player video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .video-player .vp-yt { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
+        .video-player .vp-yt > iframe { width: 100%; height: 100%; border: none; }
+
+        /* Gradient agar kontrol mudah dibaca */
+        .video-player::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(0,0,0,.6) 0%, transparent 22%, transparent 68%, rgba(0,0,0,.7) 100%);
+            opacity: 0;
+            transition: opacity .3s ease;
+            pointer-events: none;
+            z-index: 3;
+        }
+        .video-player.vp-loaded.vp-controls-visible::before { opacity: 1; }
+        .video-player.vp-loaded.vp-controls-visible { cursor: default; }
+
+        .vp-btn {
+            background: rgba(10,12,17,.5);
+            border: none;
+            color: #fff;
+            min-width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            font-size: 13px;
+            line-height: 1;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+            backdrop-filter: blur(4px);
+            transition: background .15s, transform .1s, opacity .15s;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .vp-btn:hover { background: #ff4757; }
+        .vp-btn:active { transform: scale(.93); }
+
+        /* TOP BAR (anime bar pojok kiri) */
+        .vp-topbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px 22px;
+            z-index: 6;
+            transition: opacity .3s ease;
+            background: linear-gradient(180deg, rgba(6,8,12,.62), rgba(6,8,12,.25) 65%, rgba(6,8,12,0));
+            backdrop-filter: blur(3px);
+        }
+        .vp-topbar .vp-btn { background: rgba(6,8,12,.42); }
+        .vp-info { flex: 1; min-width: 0; }
+        .vp-title {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 1px 3px rgba(0,0,0,.9);
+            opacity: 1;
+        }
+        .vp-sub {
+            color: #eee;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+            text-shadow: 0 1px 2px rgba(0,0,0,.9);
+            opacity: 1;
+        }
+
+        /* KONTROL TENGAH */
+        .vp-center {
+            position: absolute;
+            top: 55%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            z-index: 5;
+            transition: opacity .3s ease;
+        }
+        .vp-big { width: 42px; height: 42px; border-radius: 50%; font-size: 15px; background: rgba(0,0,0,.5); }
+        .vp-big.vp-play-toggle { width: 50px; height: 50px; background: rgba(10,12,17,.6); border: none; color: #fff; font-size: 18px; backdrop-filter: blur(4px); }
+        .vp-big.vp-play-toggle:hover { background: rgba(255,71,87,.85); border-color: #ff4757; }
+
+        /* SKIP INTRO */
+        .vp-skip-intro {
+            position: absolute;
+            right: 16px;
+            bottom: 66px;
+            z-index: 5;
+            background: rgba(255,71,87,.92);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 7px 10px;
+            border-radius: 6px 6px 0 6px;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,.4);
+            transition: background .15s, transform .1s;
+        }
+        .vp-skip-intro:hover { background: #ff5f6d; }
+        .vp-skip-intro:active { transform: scale(.95); }
+
+        /* BAR BAWAH */
+        .vp-bottom {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 20px 10px 8px;
+            z-index: 6;
+            transition: opacity .3s ease;
+            background: linear-gradient(0deg, rgba(6,8,12,.65), rgba(6,8,12,.28) 62%, rgba(6,8,12,0));
+            backdrop-filter: blur(3px);
+        }
+        .vp-progress {
+            position: relative;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,.25);
+            border-radius: 3px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            touch-action: none;
+        }
+        .vp-progress-buffer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: rgba(255,255,255,.35);
+            border-radius: 3px;
+            width: 0%;
+        }
+        .vp-progress-played {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: #ff4757;
+            border-radius: 3px;
+            width: 0%;
+        }
+        .vp-thumb {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: #fff;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 6px rgba(0,0,0,.5);
+            pointer-events: none;
+        }
+        .vp-controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .vp-ctl-left, .vp-ctl-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .vp-time {
+            color: #fff;
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0,0,0,.8);
+        }
+        .vp-next-ep {
+            background: rgba(10,12,17,.5);
+            border: none;
+            font-weight: 700;
+            font-size: 11px;
+            letter-spacing: .4px;
+        }
+        .vp-next-ep:hover { background: #ff4757; }
+
+        /* TOMBOL RESTORE SAAT MINIMIZED */
+        .vp-restore {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 7;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255,71,87,.92);
+            color: #fff;
+            font-size: 20px;
+            align-items: center;
+            justify-content: center;
+            display: none;
+            cursor: pointer;
+            border: none;
+        }
+        .vp-restore:hover { background: #ff5f6d; }
+
+        /* TOAST */
+        .vp-toast {
+            position: absolute;
+            left: 50%;
+            bottom: 66px;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,.82);
+            color: #fff;
+            font-size: 12px;
+            padding: 7px 13px;
+            border-radius: 6px;
+            z-index: 8;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .25s ease;
+            white-space: nowrap;
+            max-width: 90%;
+            text-align: center;
+        }
+        .vp-toast.show { opacity: 1; }
+
+        /* RESUME CHIP: "▶ Lanjut dari mm:ss" */
+        .vp-resume {
+            position: absolute;
+            bottom: 76px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(8,10,14,.55);
+            border: 1px solid rgba(255,255,255,.18);
+            backdrop-filter: blur(6px);
+            padding: 6px 8px;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,.5);
+            max-width: 92%;
+        }
+        .vp-resume-btn {
+            background: rgba(10,12,17,.6);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 8px 12px;
+            border-radius: 7px;
+            cursor: pointer;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+            transition: background .15s, transform .1s;
+        }
+        .vp-resume-btn:hover { background: rgba(255,71,87,.85); border-color: #ff4757; }
+        .vp-resume-btn:active { transform: scale(.95); }
+        .vp-resume-restart {
+            background: rgba(255,255,255,.12);
+            border: none;
+            color: #ddd;
+            font-size: 12px;
+            padding: 8px 10px;
+            border-radius: 7px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .15s;
+        }
+        .vp-resume-restart:hover { background: rgba(255,255,255,.18); }
+
+        /* INDICATOR VOLUME VERTIKAL (muncul saat slide volume) */
+        .vp-vol-indicator {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 9;
+            width: 34px;
+            height: 150px;
+            background: rgba(8,10,14,.55);
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 6px;
+            box-shadow: 0 6px 20px rgba(0,0,0,.45);
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .vp-vol-indicator.show { display: flex; }
+        .vp-vol-fill {
+            width: 100%;
+            background: linear-gradient(180deg, #ff4757, #ff8a5c);
+            border-radius: 8px;
+            flex: 0 0 auto;
+            max-height: 100%;
+            min-height: 2px;
+            transition: height .1s linear;
+        }
+        .vp-vol-pct {
+            position: absolute;
+            top: 6px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0,0,0,.9);
+        }
+
+        /* LOCK SCREEN: kunci semua kontrol */
+        .vp-lock-unlock {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            z-index: 10;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(8,10,14,.55);
+            border: 1px solid rgba(255,255,255,.28);
+            color: #fff;
+            font-size: 16px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,.45);
+        }
+        .vp-lock-unlock:hover { background: #ff4757; }
+        #player-container.vp-locked .vp-topbar,
+        #player-container.vp-locked .vp-center,
+        #player-container.vp-locked .vp-bottom,
+        #player-container.vp-locked .vp-skip-intro,
+        #player-container.vp-locked .vp-resume,
+        #player-container.vp-locked .vp-toast,
+        #player-container.vp-locked .vp-restore {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #player-container.vp-locked .vp-lock-unlock { display: flex; opacity: 1; pointer-events: auto; }
+
+        /* ERROR */
+        .vp-error {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,.86);
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+            z-index: 9;
+        }
+        .vp-error div { max-width: 320px; line-height: 1.5; }
+
+        /* Sembunyikan kontrol saat idle */
+        .video-player:not(.vp-controls-visible) .vp-topbar,
+        .video-player:not(.vp-controls-visible) .vp-center,
+        .video-player:not(.vp-controls-visible) .vp-bottom,
+        .video-player:not(.vp-controls-visible) .vp-skip-intro {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* MINIMIZED MODE */
+        #player-container.minimized {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            width: 280px;
+            height: 157px;
+            padding-bottom: 0;
+            margin: 0;
+            z-index: 7000;
+            border-radius: 12px;
+            box-shadow: 0 10px 35px rgba(0,0,0,.6);
+            border: 1px solid #333;
+            overflow: hidden;
+        }
+        #player-container.minimized .video-player { border-radius: 12px; }
+        #player-container.minimized .video-player > *:not(video):not(.vp-yt):not(.vp-restore) { opacity: 0; pointer-events: none; }
+        #player-container.minimized .vp-restore { display: flex; }
+        #player-container.minimized .video-player::before { background: rgba(0,0,0,.35); opacity: 1; }
+
+        /* FULLSCREEN CSS FALLBACK (mobile tanpa API fullscreen) */
+        #player-container.fullscreen-css {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9000;
+            padding-bottom: 0;
+            margin: 0;
+            border-radius: 0;
+            background: #000;
+        }
+
+        /* SAAT FULLSCREEN: kontrol diperbesar biar nyaman */
+        #player-container.fullscreen-css .vp-topbar { padding: 16px 20px; gap: 12px; }
+        #player-container.fullscreen-css .vp-bottom { padding: 10px 18px 14px; }
+        #player-container.fullscreen-css .vp-btn { min-width: 44px; height: 44px; font-size: 17px; padding: 0 12px; border-radius: 10px; }
+        #player-container.fullscreen-css .vp-big { width: 62px; height: 62px; font-size: 23px; border-radius: 50%; }
+        #player-container.fullscreen-css .vp-big.vp-play-toggle { width: 76px; height: 76px; font-size: 28px; border-radius: 50%; }
+        #player-container.fullscreen-css .vp-skip-intro { font-size: 14px; padding: 10px 16px; bottom: 88px; }
+        #player-container.fullscreen-css .vp-progress { height: 7px; margin-bottom: 12px; }
+        #player-container.fullscreen-css .vp-thumb { width: 16px; height: 16px; }
+        #player-container.fullscreen-css .vp-time { font-size: 14px; }
+        #player-container.fullscreen-css .vp-next-ep { font-size: 13px; }
+        #player-container.fullscreen-css .vp-title { font-size: 17px; }
+        #player-container.fullscreen-css .vp-sub { font-size: 13px; }
+        #player-container.fullscreen-css .vp-lock-unlock { top: 18px; width: 46px; height: 46px; font-size: 20px; }
+
         .anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
         .anime-card { background: #1a1c23; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative; }
         .anime-card:hover { border-color: #ff4757; }
@@ -661,6 +1119,125 @@ body {
     display: inline-block;
     white-space: nowrap;
 }
+
+/* ==========================================
+   DESKTOP VIEW (top navbar + layout lebih luas)
+   ========================================== */
+.desktop-nav {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    /* Sembunyikan bottom-nav mobile */
+    .bottom-nav { display: none; }
+
+    /* Top navbar desktop */
+        .desktop-nav {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: #1a1c23;
+            border-bottom: 1px solid #333;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 0 24px;
+            z-index: 2000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .dn-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+            font-size: 17px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+        .dn-brand img { width: 30px; height: 30px; object-fit: contain; border-radius: 6px; }
+        .dn-brand span { color: #ff4757; }
+
+        .dn-links {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .dn-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #888;
+            text-decoration: none;
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .dn-link i { font-size: 15px; }
+        .dn-link:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+        .dn-link.active { color: #ff4757; background: rgba(255, 71, 87, 0.12); }
+
+        /* Profile card di sisi kanan navbar desktop */
+        .level-card {
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+    /* Ruang untuk top navbar + konten lebih luas */
+    body {
+        padding-top: 80px;
+        padding-bottom: 30px;
+    }
+    .container { max-width: 1280px; }
+
+    .anime-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+    .anime-card img { height: 240px; }
+
+    .player-wrapper { border-radius: 14px; }
+
+    .app-header {
+        display: none;
+    }
+    .brand-logo { display: none; }
+}
+
+/* Chat modal: pastikan di atas navbar & responsif di layar kecil */
+#chat-modal { z-index: 3000 !important; }
+@media (max-width: 600px) {
+    #chat-modal {
+        left: 10px !important;
+        right: 10px !important;
+        bottom: 75px !important;
+        width: auto !important;
+        max-height: 70vh;
+    }
+    #player-container.minimized {
+        bottom: 70px;
+        right: 8px;
+        left: auto;
+        width: 190px;
+        height: 107px;
+    }
+    .vp-time { font-size: 11px; }
+}
+@media (min-width: 900px) {
+    #chat-modal {
+        width: 380px !important;
+        bottom: 20px !important;
+        right: 20px !important;
+    }
+    #chat-modal #chat-box { height: 360px !important; }
+}
     </style>
 </head>
 <body>
@@ -797,6 +1374,17 @@ body {
                 <input type="hidden" id="edit-banner-base64">
                 <label>Bio Profile</label>
                 <textarea id="edit-bio-input" rows="2" placeholder="Tulis bio singkat kamu..."></textarea>
+
+                <div style="border-top:1px solid #333; margin:15px 0 5px; padding-top:12px;">
+                    <label style="color:#ff4757; font-weight:bold;">Ganti Password (opsional)</label>
+                    <label>Password Lama</label>
+                    <input type="password" id="edit-old-password" placeholder="Kosongkan jika tidak ingin ganti">
+                    <label>Password Baru</label>
+                    <input type="password" id="edit-new-password" placeholder="Minimal 6 karakter">
+                    <label>Konfirmasi Password Baru</label>
+                    <input type="password" id="edit-confirm-password" placeholder="Ulangi password baru">
+                </div>
+
                 <button class="btn-profile" onclick="saveProfileChanges()">Simpan Perubahan</button>
             </div>
             
@@ -818,9 +1406,15 @@ body {
             </div>
         </div>
         <p class="synopsis" id="detail-synopsis">Sinopsis anime...</p>
-        <button id="bookmark-btn" onclick="toggleBookmark()" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #2f3542; color: #fff; border: 1px solid #ff4757; border-radius: 8px; font-weight: bold; cursor: pointer;">
-            🔖 Tambah ke Favorit
-        </button>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <button id="bookmark-btn" onclick="toggleBookmark()" style="flex:1; padding:10px; background: #2f3542; color: #fff; border: 1px solid #ff4757; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                🔖 Tambah ke Favorit
+            </button>
+            <button id="subscribe-anime-btn" onclick="toggleAnimeSubscribe()" style="flex:1; padding:10px; background: #2f3542; color: #fff; border: 1px solid #1e90ff; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                🔔 Subscribe
+            </button>
+        </div>
+
         <div class="episodes-title">Daftar Episode</div>
         <div class="episode-list" id="detail-episodes"></div>
     </div>
@@ -835,11 +1429,11 @@ body {
         </div>
         <div class="level-card" onclick="openProfileModal()">
             <div class="user-mini-profile">
-                <img id="mini-avatar-img" class="mini-avatar" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10">
+                <img class="mini-avatar js-avatar" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10">
                 <div class="user-info-text">
-                    <b id="display-user">Guest</b>
-                    <small id="user-level">Lvl 1</small>
-                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="xp-progress"></div></div>
+                    <b class="js-display">Guest</b>
+                    <small class="js-level">Lvl 1</small>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill js-xp"></div></div>
                 </div>
             </div>
         </div>
@@ -864,15 +1458,76 @@ body {
     <div class="slider-dots" id="slider-dots"></div>
 </div>
     
-    <!-- Video Player -->
-    <iframe id="anime-player" src="" allowfullscreen style="display: none; width: 100%; height: 100%; border: none; border-radius: 12px; position: absolute; top:0; left:0; z-index: 1;"></iframe>
-    
-    <!-- Overlay Tombol Next Episode -->
-<button id="next-ep-btn" onclick="playNextEpisode()" 
-    title="Next Episode"
-    style="display: none; position: absolute; top: 15px; right: 15px; z-index: 10; background: #1a1c23; color: white; border: none; width: 40px; height: 40px; border-radius: 30%; font-size: 16px; cursor: pointer; backdrop-filter: blur(4px); box-shadow: 0 4px 10px rgba(0,0,0,0.5); align-items: center; justify-content: center;">
-    ⏭︎
-</button>
+    <!-- CUSTOM VIDEO PLAYER -->
+    <div id="video-player" class="video-player" style="display:none;">
+        <!-- Area video HTML5 -->
+        <video id="player-video-video" preload="metadata" playsinline webkit-playsinline></video>
+        <!-- Area video YouTube (dipakai bila episode berupa link YouTube) -->
+        <div id="player-video-youtube" class="vp-yt"></div>
+
+        <!-- ANIME BAR (pojok kiri): tombol back, judul, eps -->
+        <div class="vp-topbar">
+            <button class="vp-btn" id="vp-back-btn" title="Kembali">&#8592;</button>
+            <div class="vp-info">
+                <div class="vp-title" id="vp-title"></div>
+                <div class="vp-sub" id="vp-sub"></div>
+            </div>
+            <button class="vp-btn" id="vp-minimize-btn" title="Minimalkan player">&minus;</button>
+            <button class="vp-btn" id="vp-lock-btn" title="Kunci kontrol">&#128274;</button>
+        </div>
+
+        <!-- KONTROL TENGAH: -10s / play-pause / +10s -->
+        <div class="vp-center">
+            <button class="vp-btn vp-big" id="vp-prev10-btn" title="Mundur 10 detik">&#9198;</button>
+            <button class="vp-btn vp-big vp-play-toggle" id="vp-play-center" title="Putar / Jeda">&#9654;</button>
+            <button class="vp-btn vp-big" id="vp-next10-btn" title="Lompat 10 detik">&#9197;</button>
+        </div>
+
+        <!-- SKIP INTRO -->
+        <button class="vp-skip-intro" id="vp-skip-intro">Skip Intro &raquo;</button>
+
+        <!-- INDICATOR VOLUME VERTIKAL -->
+        <div class="vp-vol-indicator" id="vp-vol-indicator">
+            <span class="vp-vol-pct" id="vp-vol-pct">100%</span>
+            <div class="vp-vol-fill" id="vp-vol-fill"></div>
+        </div>
+
+        <!-- BAR KONTROL BAWAH -->
+        <div class="vp-bottom">
+            <div class="vp-progress" id="vp-progress">
+                <div class="vp-progress-buffer" id="vp-buffer"></div>
+                <div class="vp-progress-played" id="vp-played"></div>
+                <div class="vp-thumb" id="vp-thumb"></div>
+            </div>
+            <div class="vp-controls-row">
+                <div class="vp-ctl-left">
+                    <button class="vp-btn" id="vp-play-btn" title="Putar / Jeda">&#9654;</button>
+                    <button class="vp-btn" id="vp-mute-btn" title="Volume / Mute">&#128266;</button>
+                    <span class="vp-time" id="vp-time">0:00 / 0:00</span>
+                </div>
+                <div class="vp-ctl-right">
+                    <button class="vp-btn vp-next-ep" id="vp-next-btn" style="display:none;" title="Episode berikutnya">Next Eps &raquo;</button>
+                    <button class="vp-btn" id="vp-fullscreen-btn" title="Layar penuh / keluar layar penuh">&#9974;</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tombol perbesar saat player diminimalkan -->
+        <button class="vp-restore" id="vp-restore-btn" title="Perbesar player">&#9650;</button>
+
+        <!-- NOTIFIKASI / ERROR -->
+        <div class="vp-toast" id="vp-toast"></div>
+        <div class="vp-error" id="vp-error"><div></div></div>
+
+        <!-- Tombol buka kunci (muncul saat kunci aktif) -->
+        <button class="vp-lock-unlock" id="vp-lock-unlock" title="Buka kunci">&#128275;</button>
+
+        <!-- RESUME CHIP -->
+        <div class="vp-resume" id="vp-resume" style="display:none;">
+            <button class="vp-resume-btn" id="vp-resume-btn">&#9654; Lanjut dari 0:00</button>
+            <button class="vp-resume-restart" id="vp-resume-restart">Mulai dari awal</button>
+        </div>
+    </div>
 </div>
 
     <h3 id="current-title" style="margin-bottom:15px; color:#FFFFFF;"></h3>
@@ -986,10 +1641,14 @@ body {
         <i class="fas fa-bookmark"></i>
         <span>Library</span>
     </a>
-    <a href ="profile.html" class="nav-item">
+    <a href="profile.html" class="nav-item">
         <i class="fas fa-user"></i>
         <span>Profile</span>
-    </div>
+    </a>
+    <a href="admin.html" class="nav-item" id="admin-nav-btn" style="display:none;">
+        <i class="fas fa-cog"></i>
+        <span>Admin</span>
+    </a>
 </nav>
 
 <div id="history-modal" class="profile-modal">
@@ -1003,206 +1662,64 @@ body {
     </div>
 </div>
 
+<!-- DESKTOP NAVBAR -->
+<nav class="desktop-nav">
+    <div class="dn-brand">
+        <img src="logo.png" alt="Logo">
+        ANIME<span>HUB</span>
+    </div>
+    <div class="dn-links">
+        <a href="index.html" class="dn-link active">
+            <i class="fas fa-home"></i> Home
+        </a>
+        <a href="schedule.html" class="dn-link">
+            <i class="fas fa-calendar-alt"></i> Schedule
+        </a>
+        <a href="catalog.html" class="dn-link">
+            <i class="fas fa-book"></i> Catalog
+        </a>
+        <a href="library.html" class="dn-link">
+            <i class="fas fa-bookmark"></i> Library
+        </a>
+        <a href="profile.html" class="dn-link">
+            <i class="fas fa-user"></i> Profile
+        </a>
+        <a href="admin.html" class="dn-link" id="admin-dn-btn" style="display:none;">
+            <i class="fas fa-cog"></i> Admin
+        </a>
+    </div>
+    <div class="level-card" onclick="openProfileModal()">
+        <div class="user-mini-profile">
+            <img class="mini-avatar js-avatar" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10">
+            <div class="user-info-text">
+                <b class="js-display">Guest</b>
+                <small class="js-level">Lvl 1</small>
+                <div class="progress-bar-bg"><div class="progress-bar-fill js-xp"></div></div>
+            </div>
+        </div>
+    </div>
+</nav>
+
 <script>
     let currentVideoId = "EPISODE_1";
 
-    const animeSeriesData = [
-        { 
-            id: 1, 
-            title: "Doraemon Series", 
-            season: "Series",
-            genres: ["Comedy", "Sci-Fi", "Kids"],
-            synopsis: "Doraemon adalah kucing robot dari abad ke-22 yang dikirim kembali ke masa lalu untuk membantu seorang anak laki-laki bernama Nobita Nobi.",
-            poster: "Poster Anime/DoraemonS.jpeg", 
-            episodes: [
-                { title: "Doraemon - Frasa 14", file: "Video/Doraemon/Doraemon Series/Doraemon - Frasa 14 [Bahasa Indonesia] [FHFAlJoJCd0].webm" },
-              { title: "Doraemon - Episode 375 & 376", file: "Video/Doraemon/Doraemon Series/Doraemon - Episode 375 & 376 [Bahasa Indonesia].mp4" },
-              { title: "Doraemon - Episode 371 & 372", file: "Video/Doraemon/Doraemon Series/Doraemon - Episode 371 & 372 [Bahasa Indonesia].mp4" }
-            ]
-        },
-      //ATTACK ON TITAN//
-        { 
-            id: 2, 
-            title: "Attack on Titan", 
-            season: "Season 1",
-            genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
-            synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.", 
-            poster: "Poster Anime/Aot_s1.webp", 
-            episodes: [
-                { title: "Episode 1 - To You, in 2,000 Years: The Fall of Shiganshina, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 01 [Takarir Indonesia].mp4" },
-                { title: "Episode 2 - That Day: The Fall of Shiganshina, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 02 [Takarir Indonesia].mp4" },
-                { title: "Episode 3 - A Dim Light Amid Despair: Humanity Comeback, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 03 [Takarir Indonesia].mp4" },
-                { title: "Episode 4 - The Night of the Closing Ceremony: Humanity Comeback, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 04 [Takarir Indonesia].mp4" },
-                { title: "Episode 5 - First Battle: The Struggle for Trost, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 05 [Takarir Indonesia].mp4" },
-                { title: "Episode 6 - The World the Girl Saw: The Struggle for Trost, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 06 [Takarir Indonesia].mp4" },
-                { title: "Episode 7 - Small Blade: The Struggle for Trost, Part 3", file: "Video/AOT/AotS1/Attack on Titan - Episode 07 [Takarir Indonesia].mp4" },
-                { title: "Episode 8 - I Can Hear His Heartbeat: The Struggle for Trost, Part 4", file: "Video/AOT/AotS1/Attack on Titan - Episode 08 [Takarir Indonesia].mp4" },
-                { title: "Episode 9 - Whereabouts of His Left Arm: The Struggle for Trost, Part 5", file: "Video/AOT/AotS1/Attack on Titan - Episode 09 [Takarir Indonesia].mp4" },
-                { title: "Episode 10 - Response: The Struggle for Trost, Part 6", file: "Video/AOT/AotS1/Attack on Titan - Episode 10 [Takarir Indonesia].mp4" },
-                { title: "Episode 11 - Idol: The Struggle for Trost, Part 7", file: "Video/AOT/AotS1/Attack on Titan - Episode 11 [Takarir Indonesia].mp4" },
-                { title: "Episode 12 - Wound: The Struggle for Trost, Part 8", file: "Video/AOT/AotS1/Attack on Titan - Episode 12 [Takarir Indonesia].mp4" },
-                { title: "Episode 13 - Primal Desire: The Struggle for Trost, Part 9", file: "Video/AOT/AotS1/Attack on Titan - Episode 13 [Takarir Indonesia].mp4" },
-                { title: "Episode 14 - Cant Look Into His Eyes Yet: Eve of the Counterattack, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 14 [Takarir Indonesia].mp4" },
-                { title: "Episode 15 - Special Operations Squad: Eve of the Counterattack, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 15 [Takarir Indonesia].mp4" },
-                { title: "Episode 16 - What Needs to be Done Now: Eve of the Counterattack, Part 3", file: "Video/AOT/AotS1/Attack on Titan - Episode 16 [Takarir Indonesia].mp4" },
-                { title: "Episode 17 - Female Titan: The 57th Exterior Scouting Mission, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 17 [Takarir Indonesia].mp4" },
-                { title: "Episode 18 - Forest of Giant Trees: The 57th Exterior Scouting Mission, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 18 [Takarir Indonesia].mp4" },
-                { title: "Episode 19 - Bite: The 57th Exterior Scouting Mission, Part 3", file: "Video/AOT/AotS1/Attack on Titan - Episode 19 [Takarir Indonesia].mp4" },
-                { title: "Episode 20 - Erwin Smith: The 57th Exterior Scouting Mission, Part 4", file: "Video/AOT/AotS1/Attack on Titan - Episode 20 [Takarir Indonesia].mp4" },
-                { title: "Episode 21 - Crushing Blow: The 57th Exterior Scouting Mission, Part 5", file: "Video/AOT/AotS1/Attack on Titan - Episode 21 [Takarir Indonesia].mp4" },
-                { title: "Episode 22 - The Defeated: The 57th Exterior Scouting Mission, Part 6", file: "Video/AOT/AotS1/Attack on Titan - Episode 22 [Takarir Indonesia].mp4" },
-                { title: "Episode 23 - Smile: Assault on Stohess, Part 1", file: "Video/AOT/AotS1/Attack on Titan - Episode 23 [Takarir Indonesia].mp4" },
-                { title: "Episode 24 - Mercy: Assault on Stohess, Part 2", file: "Video/AOT/AotS1/Attack on Titan - Episode 24 [Takarir Indonesia].mp4" },
-                { title: "Episode 25 - Wall: Assault on Stohess, Part 3", file: "Video/AOT/AotS1/Attack on Titan - Episode 25 [Takarir Indonesia].mp4" }
-            ]
-        },
-      //ATTACK ON TITAN S2//
-        { 
-            id: 3, 
-            title: "Attack On Titan S2", 
-            season: "Season 2",
-            genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
-            synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
-            poster: "Poster Anime/Aot_s2.webp", 
-            episodes: [
-                { title: "Episode 1 - Beast Titan", file: "Video/AOT/AotS2/Attack on Titan - Episode 26 [Takarir Indonesia].mp4" },
-                { title: "Episode 2 - Im Home", file: "Video/AOT/AotS2/Attack on Titan - Episode 27 [Takarir Indonesia].mp4" },
-                { title: "Episode 3 - Southwestward", file: "Video/AOT/AotS2/Attack on Titan - Episode 28 [Takarir Indonesia].mp4" },
-                { title: "Episode 4 - Soldier", file: "Video/AOT/AotS2/Attack on Titan - Episode 29 [Takarir Indonesia].mp4" },
-                { title: "Episode 5 - Historia", file: "Video/AOT/AotS2/Attack on Titan - Episode 30 [Takarir Indonesia].mp4" },
-                { title: "Episode 6 - Warrior", file: "Video/AOT/AotS2/Attack on Titan - Episode 31 [Takarir Indonesia].mp4" },
-                { title: "Episode 7 - Close Combat", file: "Video/AOT/AotS2/Attack on Titan - Episode 32 [Takarir Indonesia].mp4" },
-                { title: "Episode 8 - The Hunters", file: "Video/AOT/AotS2/Attack on Titan - Episode 33 [Takarir Indonesia].mp4" },
-                { title: "Episode 9 - Opening", file: "Video/AOT/AotS2/Attack on Titan - Episode 34 [Takarir Indonesia].mp4" },
-                { title: "Episode 10 - Children", file: "Video/AOT/AotS2/Attack on Titan - Episode 35 [Takarir Indonesia].mp4" },
-                { title: "Episode 11 - Charge", file: "Video/AOT/AotS2/Attack on Titan - Episode 36 [Takarir Indonesia].mp4" },
-                { title: "Episode 12 - Scream", file: "Video/AOT/AotS2/Attack on Titan - Episode 37 [Takarir Indonesia].mp4" }
-            ]
-        },
-      //ATTACK ON TITAN S3//
-      { 
-    id: 4, 
-    title: "Attack On Titan S3", 
-    season: "Season 3",
-    genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
-    synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
-    poster: "Poster Anime/Aot_S3.jpeg", 
-    episodes: [
-        { title: "Episode 1 - Smoke Signal", file: "Video/AOT/AotS3/Attack on Titan - Episode 38 [Takarir Indonesia].mp4" },
-{ title: "Episode 2 - Pain", file: "Video/AOT/AotS3/Attack on Titan - Episode 39 [Takarir Indonesia].mp4" },
-{ title: "Episode 3 - Old Story", file: "Video/AOT/AotS3/Attack on Titan - Episode 40 [Takarir Indonesia].mp4" },
-{ title: "Episode 4 - Trust", file: "Video/AOT/AotS3/Attack on Titan - Episode 41 [Takarir Indonesia].mp4" },
-{ title: "Episode 5 - Reply", file: "Video/AOT/AotS3/Attack on Titan - Episode 42 [Takarir Indonesia].mp4" },
-{ title: "Episode 6 - Sin", file: "Video/AOT/AotS3/Attack on Titan - Episode 43 [Takarir Indonesia].mp4" },
-{ title: "Episode 7 - Wish", file: "Video/AOT/AotS3/Attack on Titan - Episode 44 [Takarir Indonesia].mp4" },
-{ title: "Episode 8 - Outside the Walls of Orvud District", file: "Video/AOT/AotS3/Attack on Titan - Episode 45 [Takarir Indonesia].mp4" },
-{ title: "Episode 9 - Ruler of the Walls", file: "Video/AOT/AotS3/Attack on Titan - Episode 46 [Takarir Indonesia].mp4" },
-{ title: "Episode 10 - Friends", file: "Video/AOT/AotS3/Attack on Titan - Episode 47 [Takarir Indonesia].mp4" },
-{ title: "Episode 11 - Bystander", file: "Video/AOT/AotS3/Attack on Titan - Episode 48 [Takarir Indonesia].mp4" },
-{ title: "Episode 12 - Night of the Battle to Retake the Wall", file: "Video/AOT/AotS3/Attack on Titan - Episode 49 [Takarir Indonesia].mp4" },
-{ title: "Episode 13 - The Town Where Everything Began", file: "Video/AOT/AotS3/Attack on Titan - Episode 50 [Takarir Indonesia].mp4" },
-{ title: "Episode 14 - Thunder Spears", file: "Video/AOT/AotS3/Attack on Titan - Episode 51 [Takarir Indonesia].mp4" },
-{ title: "Episode 15 - Descent", file: "Video/AOT/AotS3/Attack on Titan - Episode 52 [Takarir Indonesia].mp4" },
-{ title: "Episode 16 - Perfect Game", file: "Video/AOT/AotS3/Attack on Titan - Episode 53 [Takarir Indonesia].mp4" },
-{ title: "Episode 17 - Hero", file: "Video/AOT/AotS3/Attack on Titan - Episode 54 [Takarir Indonesia].mp4" },
-{ title: "Episode 18 - Midnight Sun", file: "Video/AOT/AotS3/Attack on Titan - Episode 55 [Takarir Indonesia].mp4" },
-{ title: "Episode 19 - The Basement", file: "Video/AOT/AotS3/Attack on Titan - Episode 56 [Takarir Indonesia].mp4" },
-{ title: "Episode 20 - That Day", file: "Video/AOT/AotS3/Attack on Titan - Episode 57 [Takarir Indonesia].mp4" },
-{ title: "Episode 21 - Attack Titan", file: "Video/AOT/AotS3/Attack on Titan - Episode 58 [Takarir Indonesia].mp4" },
-{ title: "Episode 22 - The Other Side of the Wall", file: "Video/AOT/AotS3/Attack on Titan - Episode 59 [Takarir Indonesia].mp4" }
-    ]
-},
-      { 
-    id: 5, 
-    title: "Attack On Titan S4", 
-    season: "Season 4",
-    genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
-    synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
-    poster: "Poster Anime/Aot_S4.jpg", 
-    episodes: [
-        { title: "Episode 1 - The Other Side of the Sea", file: "Video/AOT/AotS4/Attack on Titan - Episode 60 [Takarir Indonesia].mp4" },
-{ title: "Episode 2 - Midnight Train", file: "Video/AOT/AotS4/Attack on Titan - Episode 61 [Takarir Indonesia].mp4" },
-{ title: "Episode 3 - The Door of Hope", file: "Video/AOT/AotS4/Attack on Titan - Episode 62 [Takarir Indonesia].mp4" },
-{ title: "Episode 4 - From One Hand to Another", file: "Video/AOT/AotS4/Attack on Titan - Episode 63 [Takarir Indonesia].mp4" },
-{ title: "Episode 5 - Declaration of War", file: "Video/AOT/AotS4/Attack on Titan - Episode 64 [Takarir Indonesia].mp4" },
-{ title: "Episode 6 - The War Hammer Titan", file: "Video/AOT/AotS4/Attack on Titan - Episode 65 [Takarir Indonesia].mp4" },
-{ title: "Episode 7 - Assault", file: "Video/AOT/AotS4/Attack on Titan - Episode 66 [Takarir Indonesia].mp4" },
-{ title: "Episode 8 - Assassin's Bullet", file: "Video/AOT/AotS4/Attack on Titan - Episode 67 [Takarir Indonesia].mp4" },
-{ title: "Episode 9 - Brave Volunteers", file: "Video/AOT/AotS4/Attack on Titan - Episode 68 [Takarir Indonesia].mp4" },
-{ title: "Episode 10 - A Sound Argument", file: "Video/AOT/AotS4/Attack on Titan - Episode 69 [Takarir Indonesia].mp4" },
-{ title: "Episode 11 - Deceiver", file: "Video/AOT/AotS4/Attack on Titan - Episode 70 [Takarir Indonesia].mp4" },
-{ title: "Episode 12 - Guides", file: "Video/AOT/AotS4/Attack on Titan - Episode 71 [Takarir Indonesia].mp4" },
-{ title: "Episode 13 - Children of the Forest", file: "Video/AOT/AotS4/Attack on Titan - Episode 72 [Takarir Indonesia].mp4" },
-{ title: "Episode 14 - Savagery", file: "Video/AOT/AotS4/Attack on Titan - Episode 73 [Takarir Indonesia].mp4" },
-{ title: "Episode 15 - Sole Salvation", file: "Video/AOT/AotS4/Attack on Titan - Episode 74 [Takarir Indonesia].mp4" },
-{ title: "Episode 16 - Above and Below", file: "Video/AOT/AotS4/Attack on Titan - Episode 75 [Takarir Indonesia].mp4" }
-    ]
-},
-      { 
-    id: 6, 
-    title: "Attack On Titan : Season 4 Part 2", 
-    season: "Season 4",
-    genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
-    synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
-    poster: "Poster Anime/Aot_S4_Part2.jpg", 
-    episodes: [
-        { title: "Episode 1 - Judgment", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 76 [Takarir Indonesia].mp4" },
-{ title: "Episode 2 - Sneak Attack", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 77 [Takarir Indonesia].mp4" },
-{ title: "Episode 3 - Two Brothers", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 78 [Takarir Indonesia].mp4" },
-{ title: "Episode 4 - Memories of the Future", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 79 [Takarir Indonesia].mp4" },
-{ title: "Episode 5 - From You, 2,000 Years Ago", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 80 [Takarir Indonesia].mp4" },
-{ title: "Episode 6 - Thaw", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 81 [Takarir Indonesia].mp4" },
-{ title: "Episode 7 - Sunset", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 82 [Takarir Indonesia].mp4" },
-{ title: "Episode 8 - Pride", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 83 [Takarir Indonesia].mp4" },
-{ title: "Episode 9 - Night of the End", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 84 [Takarir Indonesia].mp4" },
-{ title: "Episode 10 - Traitor", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 85 [Takarir Indonesia].mp4" },
-{ title: "Episode 11 - Retrospective", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 86 [Takarir Indonesia].mp4" },
-{ title: "Episode 12 - The Dawn of Humanity", file: "Video/AOT/AotS4P2/Attack on Titan - Episode 87 [Takarir Indonesia].mp4" }
-    ]
-},
-      { 
-    id: 7, 
-    title: "Attack On Titan : Final Chapters", 
-    season: "Final Season",
-    genres: ["Action", "Dark Fantasy", "Post-Apocalyptic", "Drama", "Military", "Mystery", "Survival", "Thriller", "Shounen"],
-    synopsis: "Synopsis : Selama berabad-abad, umat manusia hidup terkurung di dalam tiga lapis tembok raksasa demi menghindari ancaman Titan, makhluk raksasa misterius pemakan manusia. Namun, kedamaian seratus tahun itu hancur seketika saat Titan Kolosal muncul dan menjebol tembok pertahanan mereka. Setelah menyaksikan ibunya tewas mengenaskan, Eren Yeager bersama sahabatnya, Mikasa dan Armin, bersumpah untuk bergabung dengan Survey Corps dan membasmi setiap Titan yang ada di muka bumi.",
-    poster: "Poster Anime/Aot_FinalChapters.jpg", 
-    episodes: [
-        { title: "Episode 1 - The Final Chapters: Special 1", file: "Video/AOT/AotFinal/Attack on Titan - Episode 88 [Takarir Indonesia].mp4" },
-{ title: "Episode 2 - The Final Chapters: Special 2", file: "Video/AOT/AotFinal/Attack on Titan - Episode 89 [Takarir Indonesia].mp4" }
-    ]
-},
-//DORAEMON THE MOVIE//
-      { 
-    id: 8, 
-    title: "Doraemon Movie - Stand By Me", 
-    season: "Movie",
-    genres: ["Comedy", "Sci-fi", "Kids"],
-    synopsis: "Doraemon adalah kucing robot dari abad ke-22 yang dikirim kembali ke masa lalu untuk membantu seorang anak laki-laki bernama Nobita Nobi.",
-    poster: "Poster Anime/Stand By Me Doraemon.jpg", 
-    episodes: [
-        { title: "Movie - Stand by Me Doraemon", file: "Video/Doraemon/Doraemon Movie/Doraemon stand by me dub indo.mp4" }
-    ]
-},
-             { 
-            id: 9, 
-            title: "Summer Ghost", 
-            season: "Movie",
-            genres: ["Drama", "Supernatural", "Psychological"],
-            synopsis: "Tiga remaja mencari hantu musim panas.",
-            poster: "Poster Anime/SummerGhost.jpg", 
-            episodes: [
-                { title: "Movie", file: "Video/Summer Ghost/SummerGhost.mp4" }
-            ]
+    let animeSeriesData = [];
+    const animeDataReady = (async () => {
+        try {
+            const res = await fetch('/api/anime');
+            if (res.ok) animeSeriesData = await res.json();
+        } catch (e) {
+            console.error('Gagal memuat daftar anime:', e);
         }
-    ];
+    })();
 
     let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
     let viewedUserId = null;
     let isRegisterMode = false;
     let xpInterval = null;
     let currentAnimeId = null;
-    let favoriteAnimes = JSON.parse(localStorage.getItem('myAnimeFavorites') || '[]');
+    let favoriteAnimes = [];
+    let subscribedAnimes = [];
 
     window.addEventListener('DOMContentLoaded', () => {
         const savedUser = localStorage.getItem('userSession');
@@ -1210,8 +1727,10 @@ body {
             currentUser = JSON.parse(savedUser);
             document.getElementById('auth-modal').style.display = 'none';
             initUserUI();
+            loadFavoritesFromServer();
+            loadSubscriptionsFromServer();
         }
-        renderKatalog();
+        animeDataReady.then(() => renderKatalog());
         setupGalleryUploadListeners();
 
         const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
@@ -1526,73 +2045,769 @@ async function addFriend(targetUsername) {
     }
 }
 
-     let lastXpTime = Date.now();
-     let currentPlayingAnimeId = null;
-     let currentPlayingEpIndex = -1;
+     // ==========================================
+    // CUSTOM VIDEO PLAYER (HTML5 + YouTube)
+    // ==========================================
+    let lastXpTime = Date.now();
+    let currentPlayingAnimeId = null;
+    let currentPlayingEpIndex = null;
+    let playerType = 'html5';                 // 'html5' | 'youtube'
+    let ytPlayer = null;
+    let ytApiReady = false;
+    let ytPendingCallbacks = [];
+    let playerVolume = 1;
+    let playerMuted = false;
+    let controlsTimer = null;
+    let playerTickTimer = null;
+    let lastServerSaveTime = 0;
+    let lastLocalSave = 0;
+    let skipIntroShown = false;
+    let toastTimer = null;
+    let resumeTimer = null;
+    let lastResumeTime = 0;
+    let controlsLocked = false;
+    let suppressRevealUntil = 0;
+    let suppressClickUntil = 0;
+    let volGesture = null;
+    const SKIP_INTRO_END = 90;                // detik yang dilewati tombol Skip Intro
+    const PREV_NEXT_STEP = 10;                // detik maju/mundur
+    const SAVE_LOCAL_MS = 5000;               // simpan progres lokal tiap 5 dtk
+    const SAVE_SERVER_MS = 20000;             // kirim ke server tiap 20 dtk
+    const PROGRESS_KEY = 'animeWatchProgress_v1';
 
-    function playVideo(embedUrl, fullTitle, animeId = null, epIndex = -1) {
-    closeDetailModal();
+    const playerVideoEl = () => document.getElementById('player-video-video');
+    const playerYtBox = () => document.getElementById('player-video-youtube');
+    const playerBox = () => document.getElementById('video-player');
+    const playerWrapper = () => document.getElementById('player-container');
 
-    const iframe = document.getElementById('anime-player');
-    const placeholder = document.getElementById('player-placeholder');
-    const commentSec = document.getElementById('commentSection');
-    const nextBtn = document.getElementById('next-ep-btn');
-
-    if (commentSec) commentSec.style.display = 'block';
-
-    iframe.src = embedUrl;
-    iframe.style.display = 'block';
-    if (placeholder) placeholder.style.display = 'none';
-
-    document.getElementById('current-title').innerText = fullTitle;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // Simpan informasi episode yang diputar
-    currentPlayingAnimeId = animeId;
-    currentPlayingEpIndex = epIndex;
-
-    // LOGIKA PENAMPILAN TOMBOL NEXT EPS:
-    if (animeId !== null && epIndex !== -1) {
-        const anime = animeSeriesData.find(a => a.id === animeId);
-        // Tampilkan tombol 'flex' jika masih ada episode berikutnya
-        if (anime && epIndex < anime.episodes.length - 1) {
-            if (nextBtn) nextBtn.style.display = 'flex';
-        } else {
-            if (nextBtn) nextBtn.style.display = 'none'; // Sembunyikan jika episode terakhir
+    // ---------- UTIL PROGRES ----------
+    function loadProgressMap() {
+        try { return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || {}; }
+        catch (e) { return {}; }
+    }
+    function saveProgressMap(map) {
+        try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(map)); } catch (e) {}
+    }
+    function progressKey(animeId, epIndex) {
+        if (animeId === null || animeId === undefined || epIndex === null || epIndex === undefined) return '';
+        return animeId + '_' + epIndex;
+    }
+    function getSavedProgress(animeId, epIndex) {
+        const key = progressKey(animeId, epIndex);
+        const map = loadProgressMap();
+        if (key && map[key] && map[key].t) {
+            return { t: map[key].t, d: map[key].d || 0 };
         }
-
-        saveContinueWatching(anime, epIndex);
-    } else {
-        // Jika diputar dari sumber tanpa index (seperti continue watching), tampilkan tombol
-        if (nextBtn) nextBtn.style.display = 'flex';
+        if (currentUser && currentUser.continueWatching &&
+            currentUser.continueWatching.animeId === animeId &&
+            currentUser.continueWatching.epIndex === epIndex &&
+            currentUser.continueWatching.lastTime) {
+            return { t: currentUser.continueWatching.lastTime || 0, d: currentUser.continueWatching.duration || 0 };
+        }
+        return { t: 0, d: 0 };
+    }
+    function getSavedTime(animeId, epIndex) {
+        return getSavedProgress(animeId, epIndex).t;
     }
 
-    loadComments(); 
+    function getYouTubeId(src) {
+        if (!src) return '';
+        let m = src.match(/\[([A-Za-z0-9_-]{11})\]/);
+        if (m) return m[1];
+        m = src.match(/[?&]v=([A-Za-z0-9_-]{11})/) ||
+            src.match(/youtu\.be\/([A-Za-z0-9_-]{11})/) ||
+            src.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{11})/);
+        return m ? m[1] : '';
+    }
 
-    if (xpInterval) clearInterval(xpInterval);
-    lastXpTime = Date.now();
-    xpInterval = setInterval(() => {
-        const now = Date.now();
-        const deltaSeconds = Math.floor((now - lastXpTime) / 1000);
-        if (deltaSeconds >= 5) {
-            addXP(deltaSeconds);
-            lastXpTime = now;
+    // ---------- ADAPTER: HTML5 & YOUTUBE ----------
+    function adapterIsPlaying() {
+        if (playerType === 'youtube') {
+            if (!ytPlayer || !ytPlayer.getPlayerState) return false;
+            const s = ytPlayer.getPlayerState();
+            return s === 1 || s === 3;
         }
-    }, 1000);
-}
+        const v = playerVideoEl();
+        return !!(v && !v.paused && !v.ended);
+    }
+    function adapterGetTime() {
+        if (playerType === 'youtube') return ytPlayer && ytPlayer.getCurrentTime ? (ytPlayer.getCurrentTime() || 0) : 0;
+        const v = playerVideoEl();
+        return v ? (v.currentTime || 0) : 0;
+    }
+    function adapterGetDuration() {
+        if (playerType === 'youtube') return ytPlayer && ytPlayer.getDuration ? (ytPlayer.getDuration() || 0) : 0;
+        const v = playerVideoEl();
+        return v ? (v.duration || 0) : 0;
+    }
+    function adapterSeek(t) {
+        if (playerType === 'youtube') { if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(t, true); }
+        else { const v = playerVideoEl(); if (v) v.currentTime = t; }
+    }
+    function adapterPlay() {
+        if (playerType === 'youtube') { if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo(); }
+        else { const v = playerVideoEl(); if (v) v.play().catch(() => {}); }
+    }
+    function adapterPause() {
+        if (playerType === 'youtube') { if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo(); }
+        else { const v = playerVideoEl(); if (v) v.pause(); }
+    }
+    function adapterMute(m) {
+        if (playerType === 'youtube') { if (ytPlayer && ytPlayer.mute) { m ? ytPlayer.mute() : ytPlayer.unMute(); } }
+        else { const v = playerVideoEl(); if (v) v.muted = m; }
+    }
+    function adapterSetVolume(vol) {
+        if (playerType === 'youtube') { if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(Math.round(vol * 100)); }
+        else { const v = playerVideoEl(); if (v) v.volume = vol; }
+    }
+
+    // ---------- LOAD YOUTUBE API ----------
+    function ensureYouTubeApi(cb) {
+        if (window.YT && window.YT.Player) { cb(); return; }
+        ytPendingCallbacks.push(cb);
+        if (document.getElementById('yt-api-script')) return;
+        const s = document.createElement('script');
+        s.id = 'yt-api-script';
+        s.src = 'https://www.youtube.com/iframe_api';
+        s.async = true;
+        s.onerror = () => { ytPendingCallbacks = []; showPlayerError('Gagal memuat YouTube.'); };
+        document.head.appendChild(s);
+    }
+    window.onYouTubeIframeAPIReady = function () {
+        ytApiReady = true;
+        const cbs = ytPendingCallbacks.slice();
+        ytPendingCallbacks = [];
+        cbs.forEach(cb => cb());
+    };
+
+    function loadYouTubePlayer(videoId, startAt, autoPlay = true) {
+        ensureYouTubeApi(() => {
+            const ytBox = playerYtBox();
+            ytBox.innerHTML = '';
+            ytBox.style.display = 'block';
+            const v = playerVideoEl();
+            v.style.display = 'none';
+            v.removeAttribute('src');
+
+            ytPlayer = new YT.Player(ytBox, {
+                videoId: videoId,
+                playerVars: {
+                    autoplay: autoPlay ? 1 : 0,
+                    controls: 0,
+                    disablekb: 1,
+                    rel: 0,
+                    modestbranding: 1,
+                    playsinline: 1,
+                    fs: 0,
+                    iv_load_policy: 3
+                },
+                events: {
+                    onReady: (e) => {
+                        skipIntroShown = false;
+                        e.target.setVolume(Math.round(playerVolume * 100));
+                        if (playerMuted) e.target.mute();
+                        if (startAt > 0) e.target.seekTo(startAt, true);
+                        if (autoPlay) {
+                            e.target.playVideo();
+                            startPlayerTick();
+                        }
+                    },
+                    onStateChange: (e) => {
+                        if (e.data === 1 /* PLAYING */) {
+                            updatePlayButtons(true);
+                            startPlayerTick();
+                            showControls();
+                        } else if (e.data === 2 /* PAUSED */) {
+                            updatePlayButtons(false);
+                            saveCurrentProgress(true);
+                            clearControlTimer();
+                            showControls();
+                        } else if (e.data === 0 /* ENDED */) {
+                            onPlayerEnded();
+                        }
+                    },
+                    onError: () => showPlayerError('Video tidak dapat diputar (YouTube).')
+                }
+            });
+        });
+    }
+
+    // ---------- PLAY VIDEO ----------
+    function playVideo(embedUrl, fullTitle, animeId = null, epIndex = -1, opts = {}) {
+        closeDetailModal();
+
+        const commentSec = document.getElementById('commentSection');
+        if (commentSec) commentSec.style.display = 'block';
+
+        const hasIndex = animeId !== null && animeId !== undefined && epIndex >= 0;
+        const anime = hasIndex ? animeSeriesData.find(a => a.id === animeId) : null;
+        const ep = (anime && epIndex >= 0) ? anime.episodes[epIndex] : null;
+
+        currentPlayingAnimeId = hasIndex ? animeId : null;
+        currentPlayingEpIndex = hasIndex ? epIndex : null;
+
+        // ---- Anime bar pojok kiri (tombol back + judul + eps) ----
+        const titleEl = document.getElementById('vp-title');
+        const subEl = document.getElementById('vp-sub');
+        if (anime) {
+            titleEl.innerText = anime.title;
+            subEl.innerText = ep ? `Eps ${epIndex + 1} • ${ep.title}` : fullTitle;
+        } else {
+            const parts = fullTitle.split(' - ');
+            titleEl.innerText = parts[0] || fullTitle;
+            subEl.innerText = parts.slice(1).join(' - ');
+        }
+
+        // ---- Tombol Next Eps ----
+        const nextBtn = document.getElementById('vp-next-btn');
+        nextBtn.style.display = (anime && hasIndex && epIndex < anime.episodes.length - 1) ? 'inline-flex' : 'none';
+
+        // ---- Tampilkan player, sembunyikan placeholder ----
+        const placeholder = document.getElementById('player-placeholder');
+        if (placeholder) placeholder.style.display = 'none';
+        playerBox().style.display = 'block';
+        playerWrapper().classList.remove('minimized');
+
+        document.getElementById('current-title').innerText = fullTitle;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // ---- Pilih sumber ----
+        const ytId = getYouTubeId(embedUrl);
+        const savedT = getSavedProgress(currentPlayingAnimeId, currentPlayingEpIndex);
+        const savedTime = savedT.t;
+        const savedDur = savedT.d;
+        const shouldResume = opts.resume !== false && savedTime > 5 && (!savedDur || savedTime < savedDur - 30);
+
+        hidePlayerError();
+        skipIntroShown = false;
+        document.getElementById('vp-time').innerText = '0:00 / 0:00';
+        document.getElementById('vp-played').style.width = '0%';
+        document.getElementById('vp-thumb').style.left = '0%';
+
+        lastResumeTime = shouldResume ? savedTime : 0;
+        hideResumeChip();
+
+        if (ytId) {
+            playerType = 'youtube';
+            document.getElementById('vp-buffer').style.width = '0%';
+            loadYouTubePlayer(ytId, shouldResume ? savedTime : 0, !shouldResume);
+        } else {
+            playerType = 'html5';
+            const v = playerVideoEl();
+            v.style.display = 'block';
+            playerYtBox().innerHTML = '';
+            playerYtBox().style.display = 'none';
+            v.muted = playerMuted;
+            v.volume = playerVolume;
+            v.src = embedUrl;
+            v.load();
+            v.addEventListener('loadedmetadata', function onMeta() {
+                v.removeEventListener('loadedmetadata', onMeta);
+                if (shouldResume && isFinite(v.duration) && savedTime < v.duration - 30) {
+                    v.currentTime = savedTime;
+                }
+            });
+            if (!shouldResume) {
+                v.play().then(() => {}).catch(() => {
+                    if (!playerMuted) { playerMuted = true; v.muted = true; updateVolumeUI(); }
+                    v.play().catch(() => {});
+                });
+            }
+        }
+
+        if (shouldResume) showResumeChip(savedTime);
+
+        // ---- Simpan lanjut-tonton + history ----
+        if (anime && hasIndex) saveContinueWatching(anime, epIndex);
+
+        // ---- XP timer (perilaku lama dipertahankan) ----
+        if (xpInterval) clearInterval(xpInterval);
+        lastXpTime = Date.now();
+        xpInterval = setInterval(() => {
+            const now = Date.now();
+            const deltaSeconds = Math.floor((now - lastXpTime) / 1000);
+            if (deltaSeconds >= 5) { addXP(deltaSeconds); lastXpTime = now; }
+        }, 1000);
+
+        showControls();
+        loadComments();
+    }
 
     function playNextEpisode() {
-    if (currentPlayingAnimeId === null || currentPlayingEpIndex === -1) return;
-
-    const anime = animeSeriesData.find(a => a.id === currentPlayingAnimeId);
-    if (!anime) return;
-
-    const nextIndex = currentPlayingEpIndex + 1;
-    if (nextIndex < anime.episodes.length) {
-        const nextEp = anime.episodes[nextIndex];
-        playVideo(nextEp.file, `${anime.title} - ${nextEp.title}`, anime.id, nextIndex);
+        if (currentPlayingAnimeId === null || currentPlayingEpIndex === null) return;
+        const anime = animeSeriesData.find(a => a.id === currentPlayingAnimeId);
+        if (!anime) return;
+        const nextIndex = currentPlayingEpIndex + 1;
+        if (nextIndex < anime.episodes.length) {
+            const nextEp = anime.episodes[nextIndex];
+            playVideo(nextEp.file, `${anime.title} - ${nextEp.title}`, anime.id, nextIndex, { resume: false });
+        }
     }
-}
+
+    // ---------- KONTROL -------
+    function formatTime(sec) {
+        if (!isFinite(sec) || sec < 0) sec = 0;
+        sec = Math.floor(sec);
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec % 60;
+        return (h > 0 ? h + ':' : '') + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function skipBy(seconds) {
+        const t = adapterGetTime();
+        const d = adapterGetDuration();
+        let nt = t + seconds;
+        if (d > 0 && nt > d - 5) nt = Math.max(0, d - 0.1);
+        if (nt < 0) nt = 0;
+        adapterSeek(nt);
+        showControls();
+    }
+
+    function skipIntro() {
+        adapterSeek(SKIP_INTRO_END + 0.5);
+        skipIntroShown = true;
+        document.getElementById('vp-skip-intro').style.display = 'none';
+    }
+
+    function updateSkipIntro(t, d) {
+        const btn = document.getElementById('vp-skip-intro');
+        if (skipIntroShown || !d) { btn.style.display = 'none'; return; }
+        btn.style.display = (d > SKIP_INTRO_END + 20 && t < SKIP_INTRO_END && t < d - 15) ? 'block' : 'none';
+    }
+
+    function updatePlayButtons(playing) {
+        document.getElementById('vp-play-btn').innerHTML = playing ? '&#10073;&#10073;' : '&#9654;';
+        document.getElementById('vp-play-center').innerHTML = playing ? '&#10073;&#10073;' : '&#9654;';
+    }
+
+    function togglePlayPause() { adapterIsPlaying() ? adapterPause() : adapterPlay(); }
+
+    function setPlayerVolume(v) {
+        playerVolume = Math.min(1, Math.max(0, v));
+        if (playerVolume <= 0.01) playerMuted = true;
+        else playerMuted = false;
+        adapterSetVolume(playerVolume);
+        adapterMute(playerMuted);
+        updateVolumeUI();
+    }
+
+    function toggleMute() {
+        playerMuted = !playerMuted;
+        adapterMute(playerMuted);
+        if (!playerMuted) { playerVolume = 1; adapterSetVolume(1); }
+        updateVolumeUI();
+        showControls();
+    }
+
+    function updateVolumeUI() {
+        const muteBtn = document.getElementById('vp-mute-btn');
+        muteBtn.innerHTML = (playerMuted || playerVolume === 0) ? '&#128263;' : (playerVolume < 0.5 ? '&#128264;' : '&#128266;');
+    }
+
+    // ---------- PROGRESS BAR ----------
+    function updateProgressUI() {
+        const t = adapterGetTime();
+        const d = adapterGetDuration();
+        const playedEl = document.getElementById('vp-played');
+        const thumbEl = document.getElementById('vp-thumb');
+        if (d > 0 && isFinite(d) && isFinite(t)) {
+            const pct = Math.min(100, Math.max(0, (t / d) * 100));
+            playedEl.style.width = pct + '%';
+            thumbEl.style.left = pct + '%';
+            document.getElementById('vp-time').innerText = formatTime(t) + ' / ' + formatTime(d);
+            updateSkipIntro(t, d);
+        }
+        if (playerType === 'html5') {
+            const v = playerVideoEl();
+            const buf = document.getElementById('vp-buffer');
+            if (v && v.buffered && v.buffered.length && d > 0 && isFinite(d)) {
+                buf.style.width = ((v.buffered.end(v.buffered.length - 1) / d) * 100) + '%';
+            }
+        }
+    }
+
+    // ---------- TICK ----------
+    function startPlayerTick() {
+        if (playerTickTimer) return;
+        playerTickTimer = setInterval(() => {
+            if (playerBox().style.display !== 'block') { stopPlayerTick(); return; }
+            updateProgressUI();
+            maybeSaveLocalProgress();
+        }, 500);
+    }
+    function stopPlayerTick() {
+        if (playerTickTimer) { clearInterval(playerTickTimer); playerTickTimer = null; }
+    }
+
+    // ---------- SIMPAN PROGRES ----------
+    function maybeSaveLocalProgress() {
+        const now = Date.now();
+        if (now - lastLocalSave < SAVE_LOCAL_MS) return;
+        lastLocalSave = now;
+        saveCurrentProgress(false);
+    }
+    function saveCurrentProgress(flushToServer) {
+        const t = adapterGetTime();
+        const d = adapterGetDuration();
+        if (!isFinite(t) || t <= 0 || currentPlayingAnimeId === null) return;
+
+        const key = progressKey(currentPlayingAnimeId, currentPlayingEpIndex);
+        if (key) {
+            const map = loadProgressMap();
+            map[key] = { t: Math.floor(t), d: isFinite(d) ? Math.floor(d) : 0, updatedAt: Date.now() };
+            saveProgressMap(map);
+        }
+
+        if (flushToServer || Date.now() - lastServerSaveTime >= SAVE_SERVER_MS) {
+            lastServerSaveTime = Date.now();
+            const anime = animeSeriesData.find(a => a.id === currentPlayingAnimeId);
+            const ep = (anime && currentPlayingEpIndex != null) ? anime.episodes[currentPlayingEpIndex] : null;
+            if (anime && ep && currentUser) persistProgress(anime, currentPlayingEpIndex, t, d);
+        }
+    }
+
+    // ---------- AUTO NEXT EPs ----------
+    function onPlayerEnded() {
+        updatePlayButtons(false);
+        saveCurrentProgress(true);
+        stopPlayerTick();
+        if (currentPlayingAnimeId !== null && currentPlayingEpIndex !== null) {
+            const anime = animeSeriesData.find(a => a.id === currentPlayingAnimeId);
+            if (anime && currentPlayingEpIndex + 1 < anime.episodes.length) {
+                const nextIndex = currentPlayingEpIndex + 1;
+                const nextEp = anime.episodes[nextIndex];
+                showPlayerToast('Auto next: ' + nextEp.title);
+                setTimeout(() => {
+                    playVideo(nextEp.file, `${anime.title} - ${nextEp.title}`, anime.id, nextIndex, { resume: false });
+                }, 500);
+                return;
+            }
+        }
+        showPlayerToast('Video selesai.');
+    }
+
+    // ---------- FULLSCREEN ----------
+    function lockLandscape() {
+        try {
+            if (screen.orientation && screen.orientation.lock && (document.fullscreenElement || document.webkitFullscreenElement)) {
+                screen.orientation.lock('landscape').catch(() => {});
+            }
+        } catch (e) {}
+    }
+    function unlockOrientation() {
+        try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+    }
+    function toggleFullscreenAdapter() {
+        const wrapper = playerWrapper();
+        const isFS = document.fullscreenElement || document.webkitFullscreenElement;
+        if (isFS) {
+            unlockOrientation();
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } else if (wrapper.requestFullscreen) {
+            Promise.resolve(wrapper.requestFullscreen()).then(() => lockLandscape()).catch(() => {
+                wrapper.classList.add('fullscreen-css');
+                lockLandscape();
+                updateFullscreenBtn();
+            });
+        } else if (wrapper.webkitRequestFullscreen) {
+            wrapper.webkitRequestFullscreen();
+            lockLandscape();
+        } else {
+            const v = playerVideoEl();
+            if (playerType === 'html5' && v && v.webkitEnterFullscreen) {
+                try { v.webkitEnterFullscreen(); } catch (e) { wrapper.classList.toggle('fullscreen-css'); updateFullscreenBtn(); }
+            } else {
+                wrapper.classList.toggle('fullscreen-css');
+                updateFullscreenBtn();
+            }
+        }
+    }
+    function updateFullscreenBtn() {
+        const isFS = document.fullscreenElement || document.webkitFullscreenElement || playerWrapper().classList.contains('fullscreen-css');
+        const btn = document.getElementById('vp-fullscreen-btn');
+        btn.innerHTML = isFS ? '&#9634;' : '&#9974;';
+        btn.title = isFS ? 'Keluar layar penuh' : 'Layar penuh';
+    }
+    function onFullscreenChange() {
+        const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        playerWrapper().classList.toggle('fullscreen-css', isFS);
+        updateFullscreenBtn();
+        showControls();
+        if (isFS) lockLandscape(); else unlockOrientation();
+    }
+
+    // ---------- MINIMIZE ----------
+    function toggleMinimize() {
+        playerWrapper().classList.toggle('minimized');
+        const isMin = playerWrapper().classList.contains('minimized');
+        document.getElementById('vp-restore-btn').style.display = isMin ? 'flex' : 'none';
+        document.getElementById('vp-minimize-btn').innerHTML = isMin ? '&#9650;' : '&minus;';
+        document.getElementById('vp-minimize-btn').title = isMin ? 'Perbesar player' : 'Minimalkan player';
+        if (isMin) {
+            clearControlTimer();
+            showPlayerToast('Player diminimalkan. Klik untuk memperbesar.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            showControls();
+        }
+    }
+    function restorePlayer() {
+        if (playerWrapper().classList.contains('minimized')) toggleMinimize();
+    }
+
+    // ---------- KEMBALI ----------
+    function playerBack() {
+        adapterPause();
+        stopPlayerTick();
+        if (xpInterval) { clearInterval(xpInterval); xpInterval = null; }
+
+        playerBox().style.display = 'none';
+        const placeholder = document.getElementById('player-placeholder');
+        if (placeholder) placeholder.style.display = 'block';
+        playerWrapper().classList.remove('minimized', 'fullscreen-css');
+        hideResumeChip();
+        if (controlsLocked) toggleLock();
+
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+
+        const v = playerVideoEl();
+        v.pause();
+        v.removeAttribute('src');
+        v.load();
+        playerYtBox().innerHTML = '';
+        playerYtBox().style.display = 'none';
+        ytPlayer = null;
+
+        const commentSec = document.getElementById('commentSection');
+        if (commentSec) commentSec.style.display = 'none';
+        document.getElementById('current-title').innerText = '';
+
+        currentPlayingAnimeId = null;
+        currentPlayingEpIndex = null;
+        updateFullscreenBtn();
+    }
+
+    // ---------- CONTROLS VISIBILITY & TOAST ----------
+    function showControls() {
+        playerBox().classList.add('vp-controls-visible');
+        clearControlTimer();
+        if (adapterIsPlaying()) controlsTimer = setTimeout(hideControls, 3000);
+    }
+    function hideControls() {
+        if (playerWrapper().classList.contains('minimized')) return;
+        if (Date.now() < suppressRevealUntil) { playerBox().classList.remove('vp-controls-visible'); return; }
+        if (!adapterIsPlaying()) { showControls(); return; }
+        playerBox().classList.remove('vp-controls-visible');
+    }
+    function clearControlTimer() {
+        if (controlsTimer) { clearTimeout(controlsTimer); controlsTimer = null; }
+    }
+    function showPlayerToast(msg) {
+        const toast = document.getElementById('vp-toast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+    function showPlayerError(msg) {
+        const err = document.getElementById('vp-error');
+        err.querySelector('div').innerText = msg;
+        err.style.display = 'flex';
+    }
+    function hidePlayerError() {
+        document.getElementById('vp-error').style.display = 'none';
+    }
+
+    // ---------- RESUME CHIP ----------
+    function showResumeChip(sec) {
+        const box = document.getElementById('vp-resume');
+        if (!box) return;
+        const btn = document.getElementById('vp-resume-btn');
+        if (btn) btn.innerHTML = '&#9654; Lanjut dari ' + formatTime(sec);
+        box.style.display = 'flex';
+        if (resumeTimer) clearTimeout(resumeTimer);
+        resumeTimer = setTimeout(hideResumeChip, 10000);
+    }
+    function hideResumeChip() {
+        const box = document.getElementById('vp-resume');
+        if (box) box.style.display = 'none';
+        if (resumeTimer) { clearTimeout(resumeTimer); resumeTimer = null; }
+    }
+
+    // ---------- LOCK SCREEN ----------
+    function toggleLock() {
+        controlsLocked = !controlsLocked;
+        playerWrapper().classList.toggle('vp-locked', controlsLocked);
+        const lockBtn = document.getElementById('vp-lock-btn');
+        if (lockBtn) {
+            lockBtn.innerHTML = controlsLocked ? '&#128275;' : '&#128274;';
+            lockBtn.title = controlsLocked ? 'Kunci aktif. Ketuk ikon kunci untuk membuka.' : 'Kunci kontrol';
+        }
+        if (controlsLocked) {
+            clearControlTimer();
+            playerBox().classList.remove('vp-controls-visible');
+        } else {
+            showControls();
+        }
+    }
+    function unlockPlayback() {
+        if (controlsLocked) toggleLock();
+    }
+
+    // ---------- INIT ----------
+    function initCustomPlayer() {
+        document.getElementById('vp-play-btn').addEventListener('click', togglePlayPause);
+        document.getElementById('vp-play-center').addEventListener('click', togglePlayPause);
+        document.getElementById('vp-next10-btn').addEventListener('click', () => skipBy(PREV_NEXT_STEP));
+        document.getElementById('vp-prev10-btn').addEventListener('click', () => skipBy(-PREV_NEXT_STEP));
+        document.getElementById('vp-mute-btn').addEventListener('click', toggleMute);
+        document.getElementById('vp-fullscreen-btn').addEventListener('click', toggleFullscreenAdapter);
+        document.getElementById('vp-next-btn').addEventListener('click', playNextEpisode);
+        document.getElementById('vp-skip-intro').addEventListener('click', skipIntro);
+        document.getElementById('vp-back-btn').addEventListener('click', playerBack);
+        document.getElementById('vp-minimize-btn').addEventListener('click', toggleMinimize);
+        document.getElementById('vp-lock-btn').addEventListener('click', toggleLock);
+        document.getElementById('vp-lock-unlock').addEventListener('click', unlockPlayback);
+        document.getElementById('vp-restore-btn').addEventListener('click', e => { e.stopPropagation(); restorePlayer(); });
+
+        document.getElementById('vp-resume-btn').addEventListener('click', () => {
+            const t = lastResumeTime > 0 ? lastResumeTime : adapterGetTime();
+            if (t > 0) adapterSeek(t);
+            hideResumeChip();
+            adapterPlay();
+            showControls();
+        });
+        document.getElementById('vp-resume-restart').addEventListener('click', () => {
+            lastResumeTime = 0;
+            hideResumeChip();
+            adapterSeek(0);
+            const map = loadProgressMap();
+            const k = progressKey(currentPlayingAnimeId, currentPlayingEpIndex);
+            if (k && map[k]) { delete map[k]; saveProgressMap(map); }
+            const anime = currentPlayingAnimeId !== null ? animeSeriesData.find(a => a.id === currentPlayingAnimeId) : null;
+            if (anime && currentUser) persistProgress(anime, currentPlayingEpIndex, 0);
+            adapterPlay();
+            showControls();
+            showPlayerToast('Mulai dari awal.');
+        });
+
+        // Klik area video: tampil/sembunyikan UI saja (play/pause hanya lewat tombol)
+        playerBox().addEventListener('click', e => {
+            if (controlsLocked) return;
+            if (Date.now() < suppressClickUntil) return;
+            if (e.target.closest('button, input, .vp-progress')) return;
+            if (playerWrapper().classList.contains('minimized')) { restorePlayer(); return; }
+            if (playerBox().classList.contains('vp-controls-visible')) {
+                clearControlTimer();
+                playerBox().classList.remove('vp-controls-visible');
+                suppressRevealUntil = Date.now() + 1000;
+            } else {
+                showControls();
+            }
+        });
+
+        // Volume gesture: slide naik/turun di setengah area KANAN untuk ubah volume
+        playerBox().addEventListener('pointerdown', e => {
+            if (controlsLocked) return;
+            if (e.target.closest('button, input, .vp-progress')) return;
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            const rect = playerBox().getBoundingClientRect();
+            const x = (e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0));
+            if (x < rect.left + rect.width / 2) return;
+            volGesture = { startY: e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0), startVol: playerVolume, fired: false };
+            try { playerBox().setPointerCapture(e.pointerId); } catch (err) {}
+        });
+        playerBox().addEventListener('pointermove', e => {
+            if (!volGesture) return;
+            const y = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+            const delta = volGesture.startY - y;
+            if (!volGesture.fired) {
+                if (Math.abs(delta) < 20) return;
+                volGesture.fired = true;
+                suppressClickUntil = Date.now() + 600;
+                showControls();
+                document.getElementById('vp-vol-indicator').classList.add('show');
+            }
+            setPlayerVolume(Math.min(1, Math.max(0, volGesture.startVol + delta / 2 / 100)));
+            const vpPct = Math.round(playerVolume * 100);
+            document.getElementById('vp-vol-fill').style.height = vpPct + '%';
+            document.getElementById('vp-vol-pct').innerText = vpPct + '%';
+        });
+        const endVolGesture = () => {
+            volGesture = null;
+            const ind = document.getElementById('vp-vol-indicator');
+            if (ind) ind.classList.remove('show');
+        };
+        playerBox().addEventListener('pointerup', endVolGesture);
+        playerBox().addEventListener('pointercancel', endVolGesture);
+
+        // Progress bar (drag)
+        const bar = document.getElementById('vp-progress');
+        let dragging = false;
+        const seekToEvent = (e) => {
+            const rect = bar.getBoundingClientRect();
+            const x = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+            const pct = Math.min(1, Math.max(0, (x - rect.left) / rect.width));
+            const d = adapterGetDuration();
+            if (d > 0 && isFinite(d)) adapterSeek(pct * d);
+        };
+        bar.addEventListener('pointerdown', e => {
+            dragging = true;
+            try { bar.setPointerCapture(e.pointerId); } catch (err) {}
+            seekToEvent(e);
+            e.stopPropagation();
+        });
+        bar.addEventListener('pointermove', e => { if (dragging) seekToEvent(e); });
+        bar.addEventListener('pointerup', () => { dragging = false; saveCurrentProgress(false); });
+
+        // Double click -> fullscreen
+        playerBox().addEventListener('dblclick', e => {
+            if (controlsLocked) return;
+            if (!e.target.closest('button, input')) toggleFullscreenAdapter();
+        });
+
+        // Hover -> tampilkan kontrol (ditekan sesaat setelah klik biar tidak flicker)
+        playerBox().addEventListener('mousemove', () => { if (Date.now() < suppressRevealUntil) return; showControls(); });
+        playerBox().addEventListener('mouseleave', () => { clearControlTimer(); hideControls(); });
+
+        // Event native HTML5
+        const v = playerVideoEl();
+        v.addEventListener('play', () => { updatePlayButtons(true); startPlayerTick(); showControls(); });
+        v.addEventListener('pause', () => { updatePlayButtons(false); saveCurrentProgress(true); clearControlTimer(); showControls(); });
+        v.addEventListener('playing', () => { updatePlayButtons(true); startPlayerTick(); showControls(); });
+        v.addEventListener('ended', onPlayerEnded);
+        v.addEventListener('error', () => {
+            if (v.error && v.error.code) showPlayerError('Video tidak ditemukan atau format tidak didukung.');
+        });
+        v.addEventListener('volumechange', () => { if (!playerMuted) { playerVolume = v.volume || 1; updateVolumeUI(); } });
+
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', e => {
+            if (playerBox().style.display !== 'block') return;
+            if (controlsLocked) return;
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+            if (e.key === ' ') { e.preventDefault(); togglePlayPause(); }
+            else if (e.key === 'ArrowRight') { e.preventDefault(); skipBy(PREV_NEXT_STEP); }
+            else if (e.key === 'ArrowLeft') { e.preventDefault(); skipBy(-PREV_NEXT_STEP); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); setPlayerVolume(Math.min(1, playerVolume + 0.1)); }
+            else if (e.key === 'ArrowDown') { e.preventDefault(); setPlayerVolume(Math.max(0, playerVolume - 0.1)); }
+            else if (e.key === 'm' || e.key === 'M') toggleMute();
+            else if (e.key === 'f' || e.key === 'F') toggleFullscreenAdapter();
+            else if (e.key === 'n' || e.key === 'N') playNextEpisode();
+        });
+
+        updateVolumeUI();
+        updatePlayButtons(false);
+    }
+    window.addEventListener('DOMContentLoaded', initCustomPlayer);
 
 // Update fungsi openDetailModal agar memasukkan parameter animeId & index saat klik episode
 function openDetailModal(animeId) {
@@ -1615,6 +2830,7 @@ function openDetailModal(animeId) {
     `).join('');
 
     updateBookmarkButtonUI();
+    updateSubscribeButtonUI();
     document.getElementById('detail-modal').style.display = 'flex';
 }
 
@@ -1676,21 +2892,69 @@ function openDetailModal(animeId) {
 
     function toggleEditProfile() {
         const box = document.getElementById('edit-profile-box');
-        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+        const willShow = box.style.display !== 'block';
+        box.style.display = willShow ? 'block' : 'none';
+        if (willShow && currentUser) {
+            // Prefill dengan data terakhir (bio ikut terisi -> tidak perlu ketik ulang)
+            document.getElementById('edit-displayName-input').value = currentUser.displayName || currentUser.username || '';
+            document.getElementById('edit-bio-input').value = currentUser.bio || '';
+            document.getElementById('edit-avatar-base64').value = '';
+            document.getElementById('edit-banner-base64').value = '';
+            document.getElementById('edit-old-password').value = '';
+            document.getElementById('edit-new-password').value = '';
+            document.getElementById('edit-confirm-password').value = '';
+        }
     }
 
     function toggleBookmark() {
         if (!currentAnimeId) return;
-        const index = favoriteAnimes.indexOf(currentAnimeId);
-        if (index === -1) {
-            favoriteAnimes.push(currentAnimeId);
-            alert("Berhasil ditambahkan ke Favorit!");
-        } else {
-            favoriteAnimes.splice(index, 1);
-            alert("Dihapus dari Favorit!");
+
+        if (!currentUser) {
+            alert('Silakan login terlebih dahulu untuk menyimpan favorit!');
+            const am = document.getElementById('auth-modal');
+            if (am) am.style.display = 'flex';
+            return;
         }
-        localStorage.setItem('myAnimeFavorites', JSON.stringify(favoriteAnimes));
-        updateBookmarkButtonUI();
+
+        fetch('/api/favorites/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ animeId: currentAnimeId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (data.isFavorite) {
+                    if (!favoriteAnimes.includes(currentAnimeId)) favoriteAnimes.push(currentAnimeId);
+                    alert("Berhasil ditambahkan ke Favorit!");
+                } else {
+                    favoriteAnimes = favoriteAnimes.filter(id => id !== currentAnimeId);
+                    alert("Dihapus dari Favorit!");
+                }
+                updateBookmarkButtonUI();
+            } else {
+                alert(data.message || 'Gagal menyimpan favorit.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Gagal menyimpan favorit. Cek koneksi.');
+        });
+    }
+
+    // Muat favorit user dari server (per-akun, sinkron antar perangkat)
+    function loadFavoritesFromServer() {
+        if (!currentUser) return;
+        fetch('/api/favorites')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    favoriteAnimes = data.ids || [];
+                    updateBookmarkButtonUI();
+                    if (selectedGenreValue === 'favorites') filterAnime();
+                }
+            })
+            .catch(err => console.error('Gagal memuat favorit:', err));
     }
 
     function updateBookmarkButtonUI() {
@@ -1701,6 +2965,64 @@ function openDetailModal(animeId) {
         btn.style.background = isFav ? "#ff4757" : "#2f3542";
     }
 
+    // ---------- SUBSCRIBE ANIME ----------
+    function loadSubscriptionsFromServer() {
+        if (!currentUser) return;
+        fetch('/api/subscriptions')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    subscribedAnimes = data.ids || [];
+                    updateSubscribeButtonUI();
+                }
+            })
+            .catch(err => console.error('Gagal memuat subscribe:', err));
+    }
+
+    function toggleAnimeSubscribe() {
+        if (!currentAnimeId) return;
+
+        if (!currentUser) {
+            alert('Silakan login terlebih dahulu untuk subscribe!');
+            const am = document.getElementById('auth-modal');
+            if (am) am.style.display = 'flex';
+            return;
+        }
+
+        fetch('/api/subscriptions/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ animeId: currentAnimeId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (data.isSubscribed) {
+                    if (!subscribedAnimes.includes(currentAnimeId)) subscribedAnimes.push(currentAnimeId);
+                    alert("Berhasil subscribe anime ini!");
+                } else {
+                    subscribedAnimes = subscribedAnimes.filter(id => id !== currentAnimeId);
+                    alert("Berhenti subscribe anime ini.");
+                }
+                updateSubscribeButtonUI();
+            } else {
+                alert(data.message || 'Gagal mengubah subscribe.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Gagal mengubah subscribe. Cek koneksi.');
+        });
+    }
+
+    function updateSubscribeButtonUI() {
+        const btn = document.getElementById('subscribe-anime-btn');
+        if (!btn) return;
+        const isSub = subscribedAnimes.includes(currentAnimeId);
+        btn.innerText = isSub ? "🔔 Berlangganan" : "🔔 Subscribe";
+        btn.style.background = isSub ? "#1e90ff" : "#2f3542";
+    }
+    
     function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
     document.getElementById('auth-title').innerText = isRegisterMode ? 'REGISTER' : 'LOGIN';
@@ -1732,6 +3054,8 @@ function openDetailModal(animeId) {
                 localStorage.setItem('userSession', JSON.stringify(currentUser));
                 document.getElementById('auth-modal').style.display = 'none';
                 initUserUI();
+                loadFavoritesFromServer();
+                updateRatingHint();
             } else if (data.success && isRegisterMode) {
                 toggleAuthMode();
             }
@@ -1742,9 +3066,9 @@ function openDetailModal(animeId) {
     }
 
     function initUserUI() {
-        document.getElementById('display-user').innerText = currentUser.displayName || currentUser.username;
-        if (currentUser.avatar) document.getElementById('mini-avatar-img').src = currentUser.avatar;
-        
+        document.querySelectorAll('.js-display').forEach(el => el.innerText = currentUser.displayName || currentUser.username);
+        if (currentUser.avatar) document.querySelectorAll('.js-avatar').forEach(el => el.src = currentUser.avatar);
+
         updateUI();
         loadComments(); 
         renderContinueWatchingUI();
@@ -1752,6 +3076,10 @@ function openDetailModal(animeId) {
         if (currentUser.role === 'admin') {
             const adminPanel = document.getElementById('admin-panel');
             if (adminPanel) adminPanel.style.display = 'block';
+            const adminNavBtn = document.getElementById('admin-nav-btn');
+            const adminDnBtn = document.getElementById('admin-dn-btn');
+            if (adminNavBtn) adminNavBtn.style.display = '';
+            if (adminDnBtn) adminDnBtn.style.display = '';
             loadAdminPanel();
         }
         attachAvatarFullscreenListeners();
@@ -1798,8 +3126,8 @@ function openDetailModal(animeId) {
         if (!currentUser) return;
         let maxXp = getXpForNextLevel(currentUser.level || 1);
         let percentage = ((currentUser.xp || 0) / maxXp) * 100;
-        document.getElementById('user-level').innerText = `Lvl ${currentUser.level || 1}`;
-        document.getElementById('xp-progress').style.width = `${percentage}%`;
+        document.querySelectorAll('.js-level').forEach(el => el.innerText = `Lvl ${currentUser.level || 1}`);
+        document.querySelectorAll('.js-xp').forEach(el => el.style.width = `${percentage}%`);
     }
 
     async function addXP(amount) {
@@ -2127,28 +3455,56 @@ function loadFriendList() {
 
         const result = await response.json();
 
-        if (result.success) {
-            // Update session lokal & localStorage
-            currentUser = result.user;
-            localStorage.setItem('userSession', JSON.stringify(currentUser));
-            
-            // Perbarui UI profil secara langsung tanpa refresh
-            document.getElementById('p-displayName').innerText = currentUser.displayName;
-            document.getElementById('p-bio').innerText = currentUser.bio || "Belum ada bio profile.";
-            if (currentUser.avatar) {
-                document.getElementById('p-avatar-img').src = currentUser.avatar;
-                document.getElementById('mini-avatar-img').src = currentUser.avatar;
-            }
-            if (currentUser.banner) {
-                document.getElementById('p-banner-bg').style.backgroundImage = `url('${currentUser.banner}')`;
-            }
-            
-            updateUI();
-            toggleEditProfile(); // Tutup form edit
-            alert("Profil berhasil disimpan!");
-        } else {
+        if (!result.success) {
             alert("Gagal menyimpan profil: " + (result.error || result.message));
+            return;
         }
+
+        // Update session lokal & localStorage
+        currentUser = result.user;
+        localStorage.setItem('userSession', JSON.stringify(currentUser));
+
+        // Perbarui UI profil secara langsung tanpa refresh
+        document.getElementById('p-displayName').innerText = currentUser.displayName;
+        document.getElementById('p-bio').innerText = currentUser.bio || "Belum ada bio profile.";
+        if (currentUser.avatar) {
+            document.getElementById('p-avatar-img').src = currentUser.avatar;
+            document.querySelectorAll('.js-avatar').forEach(el => el.src = currentUser.avatar);
+        }
+        if (currentUser.banner) {
+            document.getElementById('p-banner-bg').style.backgroundImage = `url('${currentUser.banner}')`;
+        }
+
+        updateUI();
+
+        // 3. Ganti password (opsional)
+        const oldPassword = document.getElementById('edit-old-password').value;
+        const newPassword = document.getElementById('edit-new-password').value;
+        const confirmPassword = document.getElementById('edit-confirm-password').value;
+
+        if (oldPassword || newPassword || confirmPassword) {
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                alert("Isi semua field password untuk mengganti password.");
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                alert("Konfirmasi password baru tidak cocok.");
+                return;
+            }
+            const pwRes = await fetch('/api/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ oldPassword, newPassword })
+            });
+            const pwData = await pwRes.json();
+            if (!pwData.success) {
+                alert("Gagal mengubah password: " + (pwData.message || "Terjadi kesalahan."));
+                return;
+            }
+        }
+
+        toggleEditProfile(); // Tutup form edit
+        alert("Profil berhasil disimpan!");
     } catch (error) {
         console.error("Error saving profile:", error);
         alert("Terjadi kesalahan koneksi ke server.");
@@ -2159,16 +3515,26 @@ function loadFriendList() {
 
 // Simpan episode terakhir ke akun di server
 function saveContinueWatching(anime, epIndex) {
-    if (!currentUser) return; // Jangan simpan riwayat jika user belum login
+    if (!anime) return;
+    persistProgress(anime, epIndex, adapterGetTime() || 0);
+}
+
+// Persist progres: update riwayat lokal + kirim ke server (dipakai juga untuk auto-save tiap detik)
+function persistProgress(anime, epIndex, lastTime) {
+    if (!currentUser || !anime) return; // Jangan simpan riwayat jika user belum login
 
     const ep = anime.episodes[epIndex];
+    if (!ep) return;
+
     const cwData = {
         animeId: anime.id,
         animeTitle: anime.title,
         epIndex: epIndex,
         epTitle: ep.title,
         epFile: ep.file,
-        poster: anime.poster
+        poster: anime.poster,
+        lastTime: Math.floor(lastTime || 0),
+        duration: Math.floor(adapterGetDuration() || 0)
     };
 
     const historyData = {
@@ -2390,6 +3756,11 @@ function openCatalogModal() {
     const catalogList = document.getElementById('catalog-list');
     if (!catalogList) return;
 
+    if (!animeSeriesData.length) {
+        animeDataReady.then(openCatalogModal);
+        return;
+    }
+
     catalogList.innerHTML = animeSeriesData.map(anime => `
         <div style="display: flex; gap: 10px; background: #0d0e12; padding: 8px; border-radius: 6px; align-items: center; cursor: pointer;" onclick="closeModal('catalog-modal'); openDetailModal(${anime.id});">
             <img src="${anime.poster}" style="width: 45px; height: 60px; object-fit: cover; border-radius: 4px;">
@@ -2421,14 +3792,16 @@ function switchTab(tabName) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const animeId = urlParams.get('animeId');
-    const epIndex = urlParams.get('epIndex');
+    animeDataReady.then(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const animeId = urlParams.get('animeId');
+        const epIndex = urlParams.get('epIndex');
 
-    if (animeId && epIndex !== null) {
-        // Otomatis putar video dari Library
-        playAnime(parseInt(animeId), parseInt(epIndex));
-    }
+        if (animeId && epIndex !== null) {
+            // Otomatis putar video dari Library
+            playAnime(parseInt(animeId), parseInt(epIndex));
+        }
+    });
 });
 // ==========================================
 // FUNGSI ADMIN UNTUK BAN & SUSPEND
@@ -2684,7 +4057,7 @@ function avatarClickHandler(e) {
     <div id="chat-box" style="height: 220px; overflow-y: auto; margin: 10px 0; font-size: 12px; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;"></div>
     
     <div style="display:flex; gap: 6px;">
-        <input type="text" id="chat-input" placeholder="Tulis pesan..." style="flex:1; background:#1a1c23; border:1px solid #333; color:#fff; padding: 6px 10px; border-radius: 4px; font-size: 12px;">
+        <input type="text" id="chat-input" placeholder="Tulis pesan..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendChatMessage();}" style="flex:1; background:#1a1c23; border:1px solid #333; color:#fff; padding: 6px 10px; border-radius: 4px; font-size: 12px;">
         <button onclick="sendChatMessage()" style="background:#ff4757; color:#fff; border:none; padding: 6px 12px; border-radius: 4px; cursor:pointer; font-size: 12px; font-weight:bold;">Kirim</button>
     </div>
 </div>

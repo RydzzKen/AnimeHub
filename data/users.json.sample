@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1700000000000,
+    "username": "contoh_user",
+    "password": "hash_bcrypt_di_sini_($2a$10$...)",
+    "displayName": "Contoh User",
+    "avatar": "",
+    "banner": "",
+    "bio": "",
+    "level": 1,
+    "xp": 0,
+    "role": "user",
+    "friends": [],
+    "ratings": { "1": 8 },
+    "favorites": [1],
+    "subscriptions": [],
+    "continueWatching": null,
+    "watchHistory": null
+  }
+]

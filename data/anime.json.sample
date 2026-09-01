@@ -1,0 +1,13 @@
+[
+  {
+    "id": 1,
+    "title": "Contoh Anime",
+    "season": "Season 1",
+    "genres": ["Action", "Drama"],
+    "synopsis": "Deskripsi singkat anime.",
+    "poster": "Poster Anime/contoh.jpg",
+    "episodes": [
+      { "title": "Episode 1", "file": "Video/contoh-e1.mp4" }
+    ]
+  }
+]

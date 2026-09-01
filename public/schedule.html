@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <script src="csrf.js"></script>
+    <script src="pwa.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d0e12">
@@ -260,6 +261,72 @@
             font-size: 18px;
             margin-bottom: 3px;
         }
+
+        /* ==========================================
+           DESKTOP VIEW
+           ========================================== */
+        .desktop-nav { display: none; }
+
+        @media (min-width: 900px) {
+            .bottom-nav { display: none; }
+
+            .desktop-nav {
+                display: flex;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 60px;
+                background: #1a1c23;
+                border-bottom: 1px solid #333;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                padding: 0 24px;
+                z-index: 2000;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            }
+
+            .dn-brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                position: absolute;
+                left: 24px;
+                font-size: 17px;
+                font-weight: bold;
+                color: #fff;
+                letter-spacing: 0.5px;
+            }
+            .dn-brand img { width: 30px; height: 30px; object-fit: contain; border-radius: 6px; }
+            .dn-brand span { color: #ff4757; }
+
+            .dn-link {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #888;
+                text-decoration: none;
+                padding: 9px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                transition: all 0.2s;
+            }
+            .dn-link i { font-size: 15px; }
+            .dn-link:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+            .dn-link.active { color: #ff4757; background: rgba(255, 71, 87, 0.12); }
+
+            body { padding-top: 80px; padding-bottom: 30px; }
+
+            /* Konten lebih luas & berpusat */
+            .header { max-width: 1100px; margin: 0 auto 20px; }
+            .day-tabs { max-width: 1100px; margin: 0 auto 24px; }
+            .day-section { max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+            /* Grid hari 2 kolom di desktop */
+            .day-section .anime-card { margin-top: 0; }
+        }
     </style>
 </head>
 <body>
@@ -354,6 +421,29 @@
         <a href="profile.html" class="nav-item">
             <i class="fas fa-user"></i>
             <span>Profile</span>
+        </a>
+    </nav>
+
+    <!-- DESKTOP NAVBAR -->
+    <nav class="desktop-nav">
+        <div class="dn-brand">
+            <img src="logo.png" alt="Logo">
+            ANIME<span>HUB</span>
+        </div>
+        <a href="index.html" class="dn-link">
+            <i class="fas fa-home"></i> Home
+        </a>
+        <a href="schedule.html" class="dn-link active">
+            <i class="fas fa-calendar-alt"></i> Schedule
+        </a>
+        <a href="catalog.html" class="dn-link">
+            <i class="fas fa-book"></i> Catalog
+        </a>
+        <a href="library.html" class="dn-link">
+            <i class="fas fa-bookmark"></i> Library
+        </a>
+        <a href="profile.html" class="dn-link">
+            <i class="fas fa-user"></i> Profile
         </a>
     </nav>
 
