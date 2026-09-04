@@ -12,8 +12,24 @@ router.get('/users/:username', (req, res) => {
         return res.status(404).json({ error: 'User tidak ditemukan' });
     }
 
-    const { password, ...publicProfile } = targetUser;
-    res.json(publicProfile);
+    const isOwner = req.session && req.session.user && req.session.user.username === targetUser.username;
+
+    if (isOwner) {
+        const { password, ...fullProfile } = targetUser;
+        return res.json(fullProfile);
+    }
+
+    // Public profile: jangan bocorkan history/favorites/rating/relasi.
+    return res.json({
+        username: targetUser.username,
+        displayName: targetUser.displayName,
+        avatar: targetUser.avatar || '',
+        banner: targetUser.banner || '',
+        bio: targetUser.bio || '',
+        level: targetUser.level || 1,
+        xp: targetUser.xp || 0,
+        role: targetUser.role || 'user'
+    });
 });
 
 module.exports = router;

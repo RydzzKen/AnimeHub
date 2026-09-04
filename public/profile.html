@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <script src="csrf.js"></script>
+    <script src="escape.js"></script>
     <script src="pwa.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -248,9 +249,6 @@
                     <p>Exp</p>
                 </div>
             </div>
-            <button id="notif-btn" style="width:100%; padding:12px; background:#2d3142; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:10px;">
-                <i class="fas fa-bell"></i> <span id="notif-label">Aktifkan Notifikasi</span>
-            </button>
             <button onclick="logout()" style="width:100%; padding:12px; background:#ff4757; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:10px;">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
@@ -345,8 +343,8 @@
         document.getElementById('p-displayName').innerText = user.displayName || user.username;
         document.getElementById('p-username').innerText = '@' + user.username;
         document.getElementById('p-bio').innerText = user.bio || 'Belum ada bio profile.';
-        document.getElementById('p-avatar-img').src = user.avatar || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10';
-        document.getElementById('p-banner-bg').style.backgroundImage = `url('${user.banner || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800'}')`;
+        document.getElementById('p-avatar-img').src = safeImageUrl(user.avatar) || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10';
+        document.getElementById('p-banner-bg').style.backgroundImage = `url('${safeBanner(user.banner)}')`;
         document.getElementById('p-level').innerText = 'Lvl ' + (user.level || 1);
         document.getElementById('p-rank').innerText = getRankTitle(user.level || 1);
         document.getElementById('p-xp').innerText = (user.xp || 0) + ' XP';
@@ -362,39 +360,7 @@
             });
     }
 
-    // ---------- NOTIFIKASI PUSH ----------
-    const notifBtn = document.getElementById('notif-btn');
-    const notifLabel = document.getElementById('notif-label');
-
-    function setNotifUI(active) {
-        notifLabel.textContent = active ? '🔕 Matikan Notifikasi' : '🔔 Aktifkan Notifikasi';
-        notifBtn.style.background = active ? '#3a341b' : '#2d3142';
-    }
-
-    function initNotifUI() {
-        if (window.AnimePWA && window.AnimePWA.isPushSupported && Notification) {
-            setNotifUI(Notification.permission === 'granted');
-        } else {
-            notifBtn.disabled = true;
-            notifBtn.style.opacity = '.4';
-            notifLabel.textContent = 'Notifikasi Tidak Didukung';
-        }
-    }
-
-    notifBtn.addEventListener('click', async () => {
-        if (!window.AnimePWA) return;
-        if (Notification.permission === 'granted') {
-            setNotifUI(false);
-            await window.AnimePWA.disableNotification();
-        } else {
-            const result = await window.AnimePWA.askNotificationPermission();
-            setNotifUI(!!result.granted);
-            if (!result.granted) alert('Tidak bisa mengaktifkan notifikasi. Pastikan izin diizinkan di browser.');
-        }
-    });
-
     renderProfile();
-    initNotifUI();
 </script>
 
 </body>

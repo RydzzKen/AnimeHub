@@ -6,9 +6,13 @@ const router = express.Router();
 
 // API BAN & SUSPEND
 router.post('/admin/suspend', isAdmin, (req, res) => {
-    const { username, duration } = req.body;
+    const { username } = req.body;
     let banned = data.readBanned();
     let users = data.readUsers();
+
+    if (typeof username !== 'string' || !username.trim() || username === req.session.user.username) {
+        return res.status(400).json({ success: false, message: 'Username tidak valid!' });
+    }
 
     const userExists = users.some((u) => u.username === username);
     if (!userExists) {
@@ -20,8 +24,11 @@ router.post('/admin/suspend', isAdmin, (req, res) => {
         return res.json({ success: false, message: `User ${username} sudah dalam daftar banned/suspend!` });
     }
 
+    const rawDuration = parseInt(req.body.duration, 10);
+    const duration = Number.isFinite(rawDuration) ? Math.min(Math.max(rawDuration, 1), 720) : 24;
+
     const suspendUntil = new Date();
-    suspendUntil.setHours(suspendUntil.getHours() + parseInt(duration || 24));
+    suspendUntil.setHours(suspendUntil.getHours() + duration);
 
     banned.push({
         username: username,
@@ -31,13 +38,17 @@ router.post('/admin/suspend', isAdmin, (req, res) => {
     });
 
     data.saveBanned(banned);
-    res.json({ success: true, message: `User ${username} di-suspend selama ${duration || 24} jam.` });
+    res.json({ success: true, message: `User ${username} di-suspend selama ${duration} jam.` });
 });
 
 router.post('/admin/ban', isAdmin, (req, res) => {
     const { username } = req.body;
     let banned = data.readBanned();
     let users = data.readUsers();
+
+    if (typeof username !== 'string' || !username.trim() || username === req.session.user.username) {
+        return res.status(400).json({ success: false, message: 'Username tidak valid!' });
+    }
 
     const userExists = users.some((u) => u.username === username);
     if (!userExists) {
@@ -101,8 +112,8 @@ router.delete('/admin/users/:username', isAdmin, (req, res) => {
     const username = req.params.username;
     let users = data.readUsers();
 
-    if (username === 'admin') {
-        return res.status(400).json({ message: 'Akun Admin utama tidak bisa dihapus!' });
+    if (username === 'admin' || username === req.session.user.username) {
+        return res.status(400).json({ message: 'Akun ini tidak bisa dihapus!' });
     }
 
     users = users.filter((u) => u.username !== username);

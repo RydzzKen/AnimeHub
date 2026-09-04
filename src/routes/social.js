@@ -1,14 +1,20 @@
 const express = require('express');
 const { body } = require('express-validator');
 const data = require('../utils/dataStore');
-const { handleValidationErrors } = require('../middleware/auth');
+const { isAuthenticated, handleValidationErrors } = require('../middleware/auth');
 const push = require('../utils/push');
 
 const router = express.Router();
 
 // 1. Send Friend Request
-router.post('/friends/request', (req, res) => {
-    const { sender, receiver } = req.body;
+router.post('/friends/request', isAuthenticated, (req, res) => {
+    const sender = req.session.user.username;
+    const { receiver } = req.body;
+
+    if (typeof receiver !== 'string' || !receiver.trim() || receiver === sender) {
+        return res.status(400).json({ success: false, message: 'Penerima tidak valid.' });
+    }
+
     let friends = data.readFriends();
 
     const existing = friends.find((f) =>
@@ -35,13 +41,14 @@ router.post('/friends/request', (req, res) => {
     });
 });
 
-// 2. Accept Friend Request
-router.post('/friends/accept', (req, res) => {
+// 2. Accept Friend Request (hanya penerima yang boleh accept)
+router.post('/friends/accept', isAuthenticated, (req, res) => {
     const { requestId } = req.body;
+    const username = req.session.user.username;
     let friends = data.readFriends();
 
     const index = friends.findIndex((f) => f.id === Number(requestId));
-    if (index !== -1) {
+    if (index !== -1 && friends[index].user2 === username) {
         friends[index].status = 'accepted';
         data.saveFriends(friends);
         return res.json({ success: true, message: 'Permintaan pertemanan diterima!' });
@@ -50,24 +57,28 @@ router.post('/friends/accept', (req, res) => {
     res.json({ success: false, message: 'Permintaan tidak ditemukan.' });
 });
 
-// Endpoint Tolak Pertemanan
-router.post('/friends/reject', (req, res) => {
+// Endpoint Tolak Pertemanan (hanya penerima yang boleh tolak)
+router.post('/friends/reject', isAuthenticated, (req, res) => {
     const { requestId } = req.body;
+    const username = req.session.user.username;
     let friends = data.readFriends();
 
-    const newFriends = friends.filter((f) => f.id !== Number(requestId));
-
-    if (friends.length !== newFriends.length) {
-        data.saveFriends(newFriends);
-        return res.json({ success: true, message: 'Permintaan pertemanan ditolak.' });
+    const target = friends.find((f) => f.id === Number(requestId));
+    if (!target || target.user2 !== username) {
+        return res.json({ success: false, message: 'Permintaan tidak ditemukan.' });
     }
 
-    res.json({ success: false, message: 'Permintaan tidak ditemukan.' });
+    const newFriends = friends.filter((f) => f.id !== Number(requestId));
+    data.saveFriends(newFriends);
+    return res.json({ success: true, message: 'Permintaan pertemanan ditolak.' });
 });
 
 // Get Daftar Pending Friend Request
-router.get('/friends/requests/:username', (req, res) => {
+router.get('/friends/requests/:username', isAuthenticated, (req, res) => {
     const { username } = req.params;
+    if (username !== req.session.user.username) {
+        return res.status(403).json({ success: false, message: 'Akses ditolak.' });
+    }
     let friends = data.readFriends();
 
     const pendingRequests = friends.filter((f) => f.user2 === username && f.status === 'pending');
@@ -75,7 +86,7 @@ router.get('/friends/requests/:username', (req, res) => {
 });
 
 // Endpoint untuk mengecek status pertemanan antara 2 user
-router.get('/friends/status/:user1/:user2', (req, res) => {
+router.get('/friends/status/:user1/:user2', isAuthenticated, (req, res) => {
     const { user1, user2 } = req.params;
     const friends = data.readFriends();
 
@@ -92,8 +103,11 @@ router.get('/friends/status/:user1/:user2', (req, res) => {
 });
 
 // 1. Get Friendlist
-router.get('/friends/list/:username', (req, res) => {
+router.get('/friends/list/:username', isAuthenticated, (req, res) => {
     const { username } = req.params;
+    if (username !== req.session.user.username) {
+        return res.status(403).json({ success: false, message: 'Akses ditolak.' });
+    }
     const friends = data.readFriends();
 
     const accepted = friends.filter((f) =>
@@ -106,12 +120,18 @@ router.get('/friends/list/:username', (req, res) => {
 });
 
 // 2. Unfriend
-router.post('/friends/unfriend', (req, res) => {
-    const { user1, user2 } = req.body;
+router.post('/friends/unfriend', isAuthenticated, (req, res) => {
+    const current = req.session.user.username;
+    const { user2 } = req.body;
+
+    if (typeof user2 !== 'string' || !user2.trim() || user2 === current) {
+        return res.status(400).json({ success: false, message: 'Parameter tidak valid.' });
+    }
+
     let friends = data.readFriends();
 
     const updatedFriends = friends.filter((f) =>
-        !((f.user1 === user1 && f.user2 === user2) || (f.user1 === user2 && f.user2 === user1))
+        !((f.user1 === current && f.user2 === user2) || (f.user1 === user2 && f.user2 === current))
     );
 
     data.saveFriends(updatedFriends);
@@ -119,8 +139,11 @@ router.post('/friends/unfriend', (req, res) => {
 });
 
 // Ambil Daftar Teman
-router.get('/friends/:username', (req, res) => {
+router.get('/friends/:username', isAuthenticated, (req, res) => {
     const { username } = req.params;
+    if (username !== req.session.user.username) {
+        return res.status(403).json({ success: false, message: 'Akses ditolak.' });
+    }
     let friends = data.readFriends();
 
     const myFriends = friends.filter((f) =>
@@ -130,9 +153,15 @@ router.get('/friends/:username', (req, res) => {
     res.json(myFriends);
 });
 
-// Get Chat antara 2 User
-router.get('/chat/:user1/:user2', (req, res) => {
+// Get Chat antara 2 User (harus salah satu peserta)
+router.get('/chat/:user1/:user2', isAuthenticated, (req, res) => {
     const { user1, user2 } = req.params;
+    const current = req.session.user.username;
+
+    if (current !== user1 && current !== user2) {
+        return res.status(403).json({ success: false, message: 'Akses ditolak.' });
+    }
+
     let messages = data.readMessages();
 
     const chatHistory = messages.filter((m) =>
@@ -144,14 +173,15 @@ router.get('/chat/:user1/:user2', (req, res) => {
 
 // Send Chat
 router.post('/chat',
+    isAuthenticated,
     [
-        body('from').isString().trim().notEmpty().withMessage('Pengirim wajib diisi.'),
         body('to').isString().trim().notEmpty().withMessage('Penerima wajib diisi.'),
         body('text').isString().trim().isLength({ min: 1, max: 5000 }).withMessage('Pesan wajib diisi.')
     ],
     handleValidationErrors,
     (req, res) => {
-        const { from, to, text } = req.body;
+        const from = req.session.user.username;
+        const { to, text } = req.body;
         let messages = data.readMessages();
 
         const newMsg = { id: Date.now(), from, to, text, timestamp: new Date().toLocaleTimeString() };

@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <script src="csrf.js"></script>
+    <script src="escape.js"></script>
     <script src="pwa.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -405,12 +406,12 @@
             // 4. Render HTML
             list.innerHTML = filteredData.map(anime => `
                 <div class="catalog-item" onclick="openAnimeDetail(${anime.id})">
-                    <img src="${anime.poster}" alt="${anime.title}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50x70?text=Anime';">
+                    <img src="${esc(anime.poster)}" alt="${esc(anime.title)}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50x70?text=Anime';">
                     <div class="catalog-info">
-                        <h4>${anime.title}</h4>
+                        <h4>${esc(anime.title)}</h4>
                         <div class="badge-container">
-                            <span class="badge">${anime.season}</span>
-                            <span class="badge eps">${anime.totalEps} Episode</span>
+                            <span class="badge">${esc(anime.season)}</span>
+                            <span class="badge eps">${esc(anime.totalEps)} Episode</span>
                         </div>
                     </div>
                     <i class="fas fa-chevron-right" style="color: #444; font-size: 12px;"></i>

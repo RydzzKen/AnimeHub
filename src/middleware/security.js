@@ -1,18 +1,87 @@
 const express = require('express');
+const crypto = require('crypto');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
-const csrf = require('csurf');
 const xss = require('xss');
 const config = require('../config');
+
+const CSRF_COOKIE = 'csrfToken';
 
 // ==========================================
 // SECURITY & GLOBAL MIDDLEWARE SETUP
 // Order matters and mirrors the original server.js behaviour.
 // ==========================================
+
+// ---- CSRF helpers (double-submit cookie pattern) ----
+// Token lives in an httpOnly cookie AND must be echoed back in the
+// x-csrf-token header. This avoids depending on the session store, which
+// previously caused intermittent "CSRF tidak valid" failures on login due
+// to race conditions in session-file-store.
+function generateCsrfToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+function parseCookies(header) {
+    const cookies = {};
+    if (!header) return cookies;
+    header.split(';').forEach((part) => {
+        const eq = part.indexOf('=');
+        if (eq === -1) return;
+        const key = part.slice(0, eq).trim();
+        const val = part.slice(eq + 1).trim();
+        if (key) {
+            try {
+                cookies[key] = decodeURIComponent(val);
+            } catch (e) {
+                cookies[key] = val;
+            }
+        }
+    });
+    return cookies;
+}
+
+function tokensMatch(a, b) {
+    if (!a || !b || a.length !== b.length) return false;
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function setCsrfCookie(res) {
+    const token = generateCsrfToken();
+    res.cookie(CSRF_COOKIE, token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: config.isProd,
+        path: '/',
+        maxAge: 24 * 60 * 60 * 1000
+    });
+    return token;
+}
+
+// ---- Recursive XSS sanitization ----
+function sanitizeValue(value) {
+    if (typeof value === 'string') {
+        const cleaned = xss(value).trim();
+        return cleaned.length > 100000 ? cleaned.slice(0, 100000) : cleaned;
+    }
+    if (Array.isArray(value)) {
+        return value.map(sanitizeValue);
+    }
+    if (value && typeof value === 'object') {
+        const out = {};
+        for (const key of Object.keys(value)) {
+            out[key] = sanitizeValue(value[key]);
+        }
+        return out;
+    }
+    return value;
+}
+
 function applySecurity(app) {
     app.disable('x-powered-by');
 
@@ -35,19 +104,21 @@ function applySecurity(app) {
     }));
 
     // ---- CORS ----
-    const allowedOrigins = config.allowedOrigins;
-    const reflectAll = allowedOrigins.length === 0 || allowedOrigins.includes('*');
-    const corsOptions = {
-        origin: function (origin, callback) {
-            if (reflectAll || !origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error('CORS tidak diizinkan untuk origin ini.'));
-            }
-        },
-        credentials: true,
-    };
-    app.use(cors(corsOptions));
+    // Never reflect arbitrary origins. Same-origin requests (via the Host
+    // header) and explicitly configured origins only.
+    const allowedOrigins = config.allowedOrigins.filter((o) => o !== '*');
+    app.use((req, res, next) => {
+        const selfOrigin = `${req.protocol}://${req.get('host')}`;
+        cors({
+            origin(origin, cb) {
+                if (!origin) return cb(null, true);
+                if (origin === selfOrigin) return cb(null, true);
+                if (allowedOrigins.includes(origin)) return cb(null, true);
+                return cb(null, false);
+            },
+            credentials: true,
+        })(req, res, next);
+    });
 
     // ---- Rate limiting on /api ----
     const apiLimiter = rateLimit({
@@ -58,8 +129,15 @@ function applySecurity(app) {
     });
     app.use('/api', apiLimiter);
 
-    // ---- Request logging ----
-    app.use(morgan(config.isProd ? 'combined' : 'dev'));
+    // ---- Request logging (query strings redacted) ----
+    app.use(morgan(function (tokens, req, res) {
+        const status = tokens.status(req, res);
+        const ms = tokens['response-time'](req, res);
+        const coloredStatus = status >= 500
+            ? '\x1b[31m' + status + '\x1b[0m'
+            : status >= 400 ? '\x1b[33m' + status + '\x1b[0m' : status;
+        return `${tokens.method(req, res)} ${req.path} ${coloredStatus} ${ms} ms`;
+    }));
 
     // ---- PATH TRAVERSAL guard ----
     app.use((req, res, next) => {
@@ -73,18 +151,19 @@ function applySecurity(app) {
     });
 
     // ---- Session ----
-    const sessionSecret = config.sessionSecret;
-    if (!sessionSecret || sessionSecret.length < 16) {
+    let sessionSecret = config.sessionSecret;
+    if (!sessionSecret || sessionSecret.length < 32) {
         if (config.isProd) {
             console.error('FATAL: SESSION_SECRET is not set or too weak. Exiting.');
             process.exit(1);
         } else {
-            console.warn('WARNING: SESSION_SECRET is weak/empty, using insecure fallback (dev only).');
+            console.warn('WARNING: SESSION_SECRET is weak/empty, generating an ephemeral dev secret.');
+            sessionSecret = crypto.randomBytes(32).toString('hex');
         }
     }
 
     app.use(session({
-        secret: sessionSecret || 'insecure_dev_fallback_secret_change_me',
+        secret: sessionSecret,
         store: new FileStore({
             path: require('path').join(config.dataDir, 'sessions'),
             ttl: 24 * 60 * 60,
@@ -100,12 +179,31 @@ function applySecurity(app) {
         }
     }));
 
-    // ---- CSRF PROTECTION ----
-    const csrfProtection = csrf();
-    app.use(csrfProtection);
+    // ---- CSRF PROTECTION (double-submit cookie) ----
+    app.use((req, res, next) => {
+        const method = req.method.toUpperCase();
+        if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+            return next();
+        }
+
+        const cookies = parseCookies(req.headers.cookie || '');
+        const cookieToken = cookies[CSRF_COOKIE];
+        const headerToken = req.headers['x-csrf-token'];
+
+        if (!cookieToken || !headerToken || !tokensMatch(cookieToken, headerToken)) {
+            const err = new Error('invalid csrf token');
+            err.code = 'EBADCSRFTOKEN';
+            err.status = 403;
+            return next(err);
+        }
+        next();
+    });
 
     app.get('/api/csrf-token', (req, res) => {
-        res.json({ csrfToken: req.csrfToken() });
+        // Reuse a still-valid token so multiple tabs share the same value.
+        const existing = parseCookies(req.headers.cookie || '')[CSRF_COOKIE];
+        const token = (existing && existing.length === 64) ? existing : setCsrfCookie(res);
+        res.json({ csrfToken: token });
     });
 
     // ---- Body parsing ----
@@ -115,22 +213,10 @@ function applySecurity(app) {
     // ---- Static files ----
     app.use(express.static(config.publicDir));
 
-    // ---- XSS sanitization (existing behaviour preserved) ----
+    // ---- XSS sanitization (recursive, also covers nested objects/arrays) ----
     app.use((req, res, next) => {
-        if (req.body) {
-            for (let key in req.body) {
-                if (typeof req.body[key] === 'string') {
-                    req.body[key] = xss(req.body[key]);
-                }
-            }
-        }
-        if (req.query) {
-            for (let key in req.query) {
-                if (typeof req.query[key] === 'string') {
-                    req.query[key] = xss(req.query[key]);
-                }
-            }
-        }
+        if (req.body && typeof req.body === 'object') req.body = sanitizeValue(req.body);
+        if (req.query && typeof req.query === 'object') req.query = sanitizeValue(req.query);
         next();
     });
 }

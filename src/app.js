@@ -17,17 +17,15 @@ app.use('/api', require('./routes/push'));
 app.use('/api', require('./routes/favorites'));
 app.use('/api', require('./routes/schedule'));
 
-// ---- Custom error handler (hide stack traces in production) ----
+// ---- Custom error handler (never leaks internals to clients) ----
 app.use((err, req, res, next) => {
-    const isProd = process.env.NODE_ENV === 'production';
-    if (err.code === 'EBADCSRFTOKEN') {
+    if (err.code === 'EBADCSRFTOKEN' || err.code === 'CSRF_NOT_VALID') {
         return res.status(403).json({ success: false, message: 'Permintaan ditolak (CSRF tidak valid).' });
     }
     console.error(err);
-    res.status(err.status || 500).json({
-        success: false,
-        message: isProd ? 'Terjadi kesalahan pada server.' : (err.message || 'Terjadi kesalahan pada server.')
-    });
+    const status = err.status || 500;
+    const message = status >= 500 ? 'Terjadi kesalahan pada server.' : 'Permintaan tidak dapat diproses.';
+    res.status(status).json({ success: false, message });
 });
 
 module.exports = app;

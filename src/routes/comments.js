@@ -1,7 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const data = require('../utils/dataStore');
-const { handleValidationErrors } = require('../middleware/auth');
+const { isAuthenticated, handleValidationErrors } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -30,13 +30,15 @@ router.get('/comments', (req, res) => {
 
 // API POST KOMENTAR BARU
 router.post('/comments',
+    isAuthenticated,
     [
         body('text').isString().trim().isLength({ min: 1, max: 2000 }).withMessage('Komentar wajib diisi (maks 2000).'),
         body('video').isString().trim().notEmpty().withMessage('Judul video wajib diisi.')
     ],
     handleValidationErrors,
     (req, res) => {
-        const { video, text, user } = req.body;
+        const { video, text } = req.body;
+        const user = req.session.user.username;
 
         let comments = data.readComments();
 
@@ -44,7 +46,7 @@ router.post('/comments',
             id: Date.now(),
             video: video,
             text: text,
-            user: user || 'Anonymous',
+            user: user,
             date: new Date().toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
         };
 
@@ -55,18 +57,17 @@ router.post('/comments',
     });
 
 // API DELETE KOMENTAR
-router.delete('/comments/:id', (req, res) => {
+router.delete('/comments/:id', isAuthenticated, (req, res) => {
     const commentId = parseInt(req.params.id);
-    const { username } = req.body;
+    const currentUsername = req.session.user.username;
+    const currentRole = req.session.user.role;
 
-    if (!username) {
+    if (!currentUsername) {
         return res.status(400).json({ success: false, message: 'User tidak valid!' });
     }
 
-    let users = data.readUsers();
     let comments = data.readComments();
 
-    const currentUser = users.find((u) => u.username === username);
     const commentIndex = comments.findIndex((c) => c.id === commentId);
 
     if (commentIndex === -1) {
@@ -75,8 +76,8 @@ router.delete('/comments/:id', (req, res) => {
 
     const targetComment = comments[commentIndex];
 
-    const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.username === 'admin');
-    const isOwner = targetComment.user === username;
+    const isAdmin = currentRole === 'admin';
+    const isOwner = targetComment.user === currentUsername;
 
     if (isAdmin || isOwner) {
         comments.splice(commentIndex, 1);

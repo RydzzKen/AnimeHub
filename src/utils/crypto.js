@@ -1,24 +1,33 @@
 const crypto = require('crypto');
 
 // ==========================================
-// FIX: ENCRYPT SENSITIVE JSON DATA AT REST (AES-256-GCM)
+// ENCRYPT SENSITIVE JSON DATA AT REST (AES-256-GCM)
 // Data files are transparently encrypted on write and decrypted on read.
-// Existing plaintext files are migrated automatically on first save.
+// Only the key from ENCRYPTION_KEY is ever used. No hardcoded fallback
+// keys exist, so an attacker can never decrypt with a known default.
 // ==========================================
-// FIX: build a list of candidate keys so reads never fail catastrophically if the
-// active key differs from the one used to write the file (prevents silent data loss).
-const encryptionCandidates = [];
-if (process.env.ENCRYPTION_KEY) {
-    encryptionCandidates.push(crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest());
-}
-encryptionCandidates.push(crypto.createHash('sha256').update('insecure_dev_fallback_encryption_key_change_me').digest());
-// key historically used by migration scripts that fell back to 'x'
-encryptionCandidates.push(crypto.createHash('sha256').update('x').digest());
 
-// Key used for WRITING: prefer the configured one, otherwise the dev fallback.
-const encKey = process.env.ENCRYPTION_KEY
-    ? crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest()
-    : crypto.createHash('sha256').update('insecure_dev_fallback_encryption_key_change_me').digest();
+const envKey = process.env.ENCRYPTION_KEY;
+
+// Write key: prefer the configured key. In dev without one, generate an
+// ephemeral key so boot never fails; anything written with it is only
+// readable during the same process lifetime (legacy migration path).
+let encKey;
+let ephemeralKey = null;
+if (envKey && envKey.length >= 16) {
+    encKey = crypto.createHash('sha256').update(envKey).digest();
+} else {
+    if (process.env.NODE_ENV === 'production') {
+        console.error('FATAL: ENCRYPTION_KEY is not set or too weak. Exiting.');
+        process.exit(1);
+    }
+    console.warn('WARNING: ENCRYPTION_KEY is weak/empty, using an ephemeral dev key.');
+    ephemeralKey = crypto.randomBytes(32);
+    encKey = ephemeralKey;
+}
+
+const encryptionCandidates = [encKey];
+if (ephemeralKey && !Buffer.isBuffer(encKey)) encryptionCandidates.push(ephemeralKey);
 
 function encryptJSON(obj) {
     const iv = crypto.randomBytes(12);
@@ -38,7 +47,6 @@ function decryptJSON(raw) {
     const iv = Buffer.from(parts[1], 'base64');
     const tag = Buffer.from(parts[2], 'base64');
     const data = parts.slice(3).join(':');
-    // FIX: try every candidate key before giving up.
     for (const key of encryptionCandidates) {
         try {
             const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
@@ -50,7 +58,6 @@ function decryptJSON(raw) {
             // try next candidate key
         }
     }
-    // Corrupted/encrypted data we can't read with any key -> return null (caller uses safe default)
     return null;
 }
 

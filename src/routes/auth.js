@@ -1,13 +1,54 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { body } = require('express-validator');
+const rateLimit = require('express-rate-limit');
 const data = require('../utils/dataStore');
 const { isAuthenticated, handleValidationErrors } = require('../middleware/auth');
+const { isSafeImageUrl } = require('../utils/validation');
 
 const router = express.Router();
 
+// ---- Strict rate limiting on credential endpoints (brute-force defence) ----
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Terlalu banyak percobaan. Coba lagi beberapa saat lagi.' }
+});
+
+// ---- In-memory account lockout (resets on restart) ----
+const failedAttempts = new Map();
+
+function isLocked(username) {
+    const entry = failedAttempts.get(username);
+    if (!entry) return false;
+    if (entry.until && entry.until > Date.now()) return true;
+    if (entry.until && entry.until <= Date.now()) failedAttempts.delete(username);
+    return false;
+}
+
+function recordFailure(username) {
+    const entry = failedAttempts.get(username) || { count: 0, until: 0 };
+    entry.count += 1;
+    if (entry.count >= 5) {
+        entry.until = Date.now() + (15 * 60 * 1000);
+        entry.count = 0;
+    }
+    failedAttempts.set(username, entry);
+}
+
+function clearFailure(username) {
+    failedAttempts.delete(username);
+}
+
+function assertSafeImage(value) {
+    return isSafeImageUrl(value);
+}
+
 // 1. API REGISTER
 router.post('/register',
+    authLimiter,
     [
         body('username').isString().trim().isLength({ min: 3, max: 30 }).matches(/^[a-zA-Z0-9_]+$/).withMessage('Username tidak valid (3-30 huruf/angka/underscore).'),
         body('password').isString().isLength({ min: 6 }).withMessage('Password minimal 6 karakter.')
@@ -20,7 +61,14 @@ router.post('/register',
             return res.status(400).json({ success: false, message: 'Username dan password wajib diisi!' });
         }
 
-        let users = data.readUsers();
+        const users = data.readUsers();
+
+        // First-ever account becomes admin (secure bootstrap). The reserved
+        // 'admin' username cannot be claimed afterwards.
+        const isFirstUser = users.length === 0;
+        if (username.toLowerCase() === 'admin' && !isFirstUser) {
+            return res.json({ success: false, message: 'Username sudah terdaftar!' });
+        }
 
         if (users.find((u) => u.username === username)) {
             return res.json({ success: false, message: 'Username sudah terdaftar!' });
@@ -38,7 +86,7 @@ router.post('/register',
             bio: '',
             level: 1,
             xp: 0,
-            role: username === 'admin' ? 'admin' : 'user',
+            role: isFirstUser ? 'admin' : 'user',
             friends: [],
             continueWatching: null
         };
@@ -51,6 +99,7 @@ router.post('/register',
 
 // 2. API LOGIN
 router.post('/login',
+    authLimiter,
     [
         body('username').isString().trim().notEmpty().withMessage('Username wajib diisi.'),
         body('password').isString().notEmpty().withMessage('Password wajib diisi.')
@@ -60,6 +109,10 @@ router.post('/login',
         const { username, password } = req.body;
         let users = data.readUsers();
         let banned = data.readBanned();
+
+        if (isLocked(username)) {
+            return res.status(429).json({ success: false, message: 'Terlalu banyak percobaan gagal. Akun dikunci 15 menit.' });
+        }
 
         const dummyHash = '$2a$10$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
         let user = users.find((u) => u.username === username);
@@ -79,7 +132,12 @@ router.post('/login',
             bcrypt.compareSync(password || '', dummyHash);
         }
 
+        if (!passwordValid) {
+            recordFailure(username);
+        }
+
         if (user && passwordValid) {
+            clearFailure(username);
             const banEntry = banned.find((b) => b.username === username);
 
             if (banEntry) {
@@ -144,8 +202,9 @@ router.post('/logout', (req, res) => {
 });
 
 // API: Simpan Continue Watching ke Database Akun
-router.post('/save-continue-watching', (req, res) => {
-    const { username, cwData, watchHistory } = req.body;
+router.post('/save-continue-watching', isAuthenticated, (req, res) => {
+    const username = req.session.user.username;
+    const { cwData, watchHistory } = req.body;
 
     if (!username) {
         return res.status(400).json({ success: false, message: 'Username tidak valid' });
@@ -155,8 +214,8 @@ router.post('/save-continue-watching', (req, res) => {
     const userIndex = users.findIndex((u) => u.username === username);
 
     if (userIndex !== -1) {
-        users[userIndex].continueWatching = cwData;
-        users[userIndex].watchHistory = watchHistory;
+        users[userIndex].continueWatching = cwData || null;
+        users[userIndex].watchHistory = watchHistory || null;
 
         data.saveUsers(users);
         return res.json({ success: true, message: 'Riwayat tontonan berhasil disimpan!' });
@@ -166,14 +225,15 @@ router.post('/save-continue-watching', (req, res) => {
 });
 
 // 3. API UPDATE XP & LEVEL
-router.post('/update-progress', (req, res) => {
-    const { username, xp, level } = req.body;
+router.post('/update-progress', isAuthenticated, (req, res) => {
+    const username = req.session.user.username;
+    const { xp, level } = req.body;
     let users = data.readUsers();
     let user = users.find((u) => u.username === username);
 
     if (user) {
-        user.xp = xp;
-        user.level = level;
+        user.xp = Number.isFinite(Number(xp)) ? Math.max(0, parseInt(xp)) : (user.xp || 0);
+        user.level = Number.isFinite(Number(level)) ? Math.max(1, parseInt(level)) : (user.level || 1);
         data.saveUsers(users);
         return res.json({ success: true });
     }
@@ -182,29 +242,39 @@ router.post('/update-progress', (req, res) => {
 });
 
 // 4. API UPDATE PROFILE
-router.post('/update-profile', isAuthenticated, (req, res) => {
-    const username = req.session.user.username;
+router.post('/update-profile',
+    isAuthenticated,
+    [
+        body('displayName').optional({ values: 'falsy' }).isString().trim().isLength({ min: 3, max: 30 }).withMessage('Display name harus 3-30 karakter.'),
+        body('bio').optional({ values: 'falsy' }).isString().isLength({ max: 300 }).withMessage('Bio maksimal 300 karakter.'),
+        body('avatar').optional({ values: 'falsy' }).isString().custom(assertSafeImage).withMessage('Avatar tidak valid.'),
+        body('banner').optional({ values: 'falsy' }).isString().custom(assertSafeImage).withMessage('Banner tidak valid.')
+    ],
+    handleValidationErrors,
+    (req, res) => {
+        const username = req.session.user.username;
 
-    let users = data.readUsers();
-    let user = users.find((u) => u.username === username);
+        let users = data.readUsers();
+        let user = users.find((u) => u.username === username);
 
-    if (user) {
-        if (req.body.displayName !== undefined) user.displayName = req.body.displayName || user.username;
-        if (req.body.avatar !== undefined) user.avatar = req.body.avatar;
-        if (req.body.banner !== undefined) user.banner = req.body.banner;
-        if (req.body.bio !== undefined) user.bio = req.body.bio;
+        if (user) {
+            if (req.body.displayName !== undefined && req.body.displayName) user.displayName = String(req.body.displayName).trim().slice(0, 30);
+            if (req.body.avatar !== undefined && req.body.avatar) user.avatar = String(req.body.avatar).slice(0, 2000);
+            if (req.body.banner !== undefined && req.body.banner) user.banner = String(req.body.banner).slice(0, 2000);
+            if (req.body.bio !== undefined) user.bio = String(req.body.bio || '').slice(0, 300);
 
-        data.saveUsers(users);
+            data.saveUsers(users);
 
-        const { password, ...updatedUserData } = user;
-        return res.json({ success: true, message: 'Profil berhasil diperbarui!', user: updatedUserData });
-    }
+            const { password, ...updatedUserData } = user;
+            return res.json({ success: true, message: 'Profil berhasil diperbarui!', user: updatedUserData });
+        }
 
-    res.status(404).json({ success: false, message: 'User tidak ditemukan' });
-});
+        res.status(404).json({ success: false, message: 'User tidak ditemukan' });
+    });
 
 // 5. API GANTI PASSWORD
 router.post('/change-password',
+    authLimiter,
     isAuthenticated,
     [
         body('oldPassword').isString().notEmpty().withMessage('Password lama wajib diisi.'),

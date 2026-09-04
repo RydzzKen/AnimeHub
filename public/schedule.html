@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <script src="csrf.js"></script>
+    <script src="escape.js"></script>
     <script src="pwa.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -352,52 +353,11 @@
         <button class="tab-btn" data-day="minggu">Minggu</button>
     </div>
 
-    <!-- HARI SENIN -->
-    <div class="day-section" data-day="senin">
-        <div class="day-header">
-            <span>Senin</span>
-            <span class="count">1 Anime</span>
-        </div>
-        
-        <!-- Contoh Anime 1 -->
-        <div class="anime-card">
-            <img class="poster" src="Poster Anime/Aot_FinalChapters.jpg" alt="Poster">
-            <div class="anime-info">
-                <div class="anime-title">Attack on Titan Final Season</div>
-                <div class="anime-meta">
-                    <span class="episode-badge">Eps 12</span>
-                    <span>Action, Drama</span>
-                </div>
-            </div>
-            <div class="time-badge upcoming">
-                <i class="far fa-clock"></i> 22:00 WIB
-            </div>
-        </div>
-
-        <!-- UNTUK TAMBAH ANIME SENIN, TEMPELKAN <div class="anime-card">...</div> DI SINI -->
-    </div>
-
-    <!-- HARI MINGGU -->
-    <div class="day-section" data-day="minggu">
-        <div class="day-header">
-            <span>Minggu</span>
-            <span class="count">1 Anime</span>
-        </div>
-        
-        <!-- Contoh Anime 2 -->
-        <div class="anime-card">
-            <img class="poster" src="Poster Anime/DoraemonS.jpeg" alt="Poster">
-            <div class="anime-info">
-                <div class="anime-title">Doraemon Series</div>
-                <div class="anime-meta">
-                    <span class="episode-badge">Eps 1042</span>
-                    <span>Comedy, Sci-Fi</span>
-                </div>
-            </div>
-            <div class="time-badge live">
-                <span class="live-dot"></span> 08:00 WIB
-            </div>
-        </div>
+    <!-- DAFTAR JADWAL (RENDER DINAMIS DARI /api/schedule) -->
+    <div id="schedule-container">
+        <p style="color: var(--text-muted); padding: 20px; text-align: center;">
+            <i class="fas fa-spinner fa-spin"></i> Memuat jadwal...
+        </p>
     </div>
 
     <!-- NAVBAR ORIGINAL (SAMA PERSIS KODE AWAL KAMU) -->
@@ -447,25 +407,98 @@
         </a>
     </nav>
 
-    <!-- SCRIPT AGAR TOMBOL HARI BISA DIKLIK -->
+    <!-- SCRIPT: MUAT JADWAL DARI API + FILTER HARI -->
     <script>
-        document.querySelectorAll('.tab-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
+        const DAY_ORDER = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+        const DAY_LABEL = { senin: 'Senin', selasa: 'Selasa', rabu: 'Rabu', kamis: 'Kamis', jumat: 'Jumat', sabtu: 'Sabtu', minggu: 'Minggu' };
 
-                const selectedDay = button.getAttribute('data-day');
-                const sections = document.querySelectorAll('.day-section');
+        function isLive(timeStr) {
+            if (!timeStr) return false;
+            const match = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})/);
+            if (!match) return false;
+            const now = new Date();
+            return Number(match[1]) === now.getHours() && Number(match[2]) === now.getMinutes();
+        }
 
-                sections.forEach(section => {
-                    if (selectedDay === 'semua' || section.getAttribute('data-day') === selectedDay) {
-                        section.classList.remove('hidden');
-                    } else {
-                        section.classList.add('hidden');
-                    }
-                });
+        function renderSchedule(data) {
+            const container = document.getElementById('schedule-container');
+            const list = Array.isArray(data) ? data.slice() : [];
+            list.sort(
+                (a, b) =>
+                    (DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day)) ||
+                    (a.time || '').localeCompare(b.time || '')
+            );
+
+            if (list.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); padding: 20px; text-align: center;">Belum ada jadwal.</p>';
+                return;
+            }
+
+            const grouped = DAY_ORDER.map((day) => ({
+                day,
+                items: list.filter((s) => s.day === day)
+            })).filter((g) => g.items.length > 0);
+
+            container.innerHTML = grouped.map((g) => `
+                <div class="day-section" data-day="${g.day}">
+                    <div class="day-header">
+                        <span>${DAY_LABEL[g.day] || g.day}</span>
+                        <span class="count">${g.items.length} Anime</span>
+                    </div>
+                    ${g.items.map((s) => {
+                        const live = isLive(s.time);
+                        const badge = live
+                            ? '<span class="live-dot"></span> '
+                            : '<i class="far fa-clock"></i> ';
+                        const genres = (Array.isArray(s.genres) ? s.genres.join(', ') : s.genres || '').trim();
+                        return `
+                        <div class="anime-card">
+                            <img class="poster" src="${safeImageUrl(s.poster) || 'https://via.placeholder.com/55x70?text=Anime'}" alt="${esc(s.title)}">
+                            <div class="anime-info">
+                                <div class="anime-title">${esc(s.title)}</div>
+                                <div class="anime-meta">
+                                    ${s.episode ? `<span class="episode-badge">${esc(s.episode)}</span>` : ''}
+                                    ${genres ? `<span>${esc(genres)}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="time-badge ${live ? 'live' : 'upcoming'}">${badge} ${esc(s.time)} WIB</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            `).join('');
+
+            bindTabs();
+        }
+
+        function bindTabs() {
+            const buttons = document.querySelectorAll('.tab-btn');
+            const sections = document.querySelectorAll('.day-section');
+            buttons.forEach((button) => {
+                button.onclick = () => {
+                    buttons.forEach((btn) => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    const selectedDay = button.getAttribute('data-day');
+                    sections.forEach((section) => {
+                        if (selectedDay === 'semua' || section.getAttribute('data-day') === selectedDay) {
+                            section.classList.remove('hidden');
+                        } else {
+                            section.classList.add('hidden');
+                        }
+                    });
+                };
             });
-        });
+        }
+
+        (async function init() {
+            try {
+                const res = await fetch('/api/schedule', { credentials: 'same-origin' });
+                const data = await res.json();
+                renderSchedule(data);
+            } catch (e) {
+                const container = document.getElementById('schedule-container');
+                container.innerHTML = '<p style="color: var(--text-muted); padding: 20px; text-align: center;">Gagal memuat jadwal.</p>';
+            }
+        })();
     </script>
 
 </body>

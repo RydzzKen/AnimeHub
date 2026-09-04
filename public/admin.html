@@ -63,6 +63,41 @@
         .badge.suspended { background: #3a341b; color: #ffd86b; }
         .badge.user { background: #1b2a3a; color: #6bb8ff; }
         .badge.admin { background: #1b3a24; color: #2ed573; }
+
+        /* Bottom Navbar (mobile) */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
+            background-color: #1a1c23;
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid #2f3542; z-index: 1000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: #888; text-decoration: none; font-size: 11px; cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .nav-item:hover, .nav-item.active { color: #ff4757; text-decoration: none; }
+        .nav-item i { font-size: 18px; margin-bottom: 3px; }
+
+        /* Desktop Navbar */
+        .desktop-nav { display: none; }
+
+        @media (min-width: 900px) {
+            .bottom-nav { display: none; }
+            .desktop-nav {
+                display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+                background: #1a1c23; border-bottom: 1px solid #333;
+                align-items: center; justify-content: center; gap: 6px;
+                padding: 0 24px; z-index: 2000; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            }
+            .dn-brand { display: flex; align-items: center; gap: 10px; position: absolute; left: 24px; font-size: 17px; font-weight: bold; color: #fff; letter-spacing: 0.5px; }
+            .dn-brand span { color: #ff4757; }
+            .dn-link { display: flex; align-items: center; gap: 8px; color: #888; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+            .dn-link i { font-size: 15px; }
+            .dn-link:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+            .dn-link.active { color: #ff4757; background: rgba(255, 71, 87, 0.12); }
+            body { padding-top: 80px; padding-bottom: 30px; }
+        }
     </style>
 </head>
 <body>
@@ -227,6 +262,7 @@
     </div>
 
     <script src="csrf.js"></script>
+    <script src="escape.js"></script>
     <script src="pwa.js"></script>
     <script>
         const $ = (id) => document.getElementById(id);
@@ -685,5 +721,51 @@
 
         checkSession();
     </script>
+
+    <!-- BOTTOM NAVBAR (MOBILE) -->
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="schedule.html" class="nav-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Schedule</span>
+        </a>
+        <a href="catalog.html" class="nav-item">
+            <i class="fas fa-book"></i>
+            <span>Catalog</span>
+        </a>
+        <a href="library.html" class="nav-item">
+            <i class="fas fa-bookmark"></i>
+            <span>Library</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <!-- DESKTOP NAVBAR -->
+    <nav class="desktop-nav">
+        <div class="dn-brand">
+            ANIME<span>HUB</span>
+        </div>
+        <a href="index.html" class="dn-link">
+            <i class="fas fa-home"></i> Home
+        </a>
+        <a href="schedule.html" class="dn-link">
+            <i class="fas fa-calendar-alt"></i> Schedule
+        </a>
+        <a href="catalog.html" class="dn-link">
+            <i class="fas fa-book"></i> Catalog
+        </a>
+        <a href="library.html" class="dn-link">
+            <i class="fas fa-bookmark"></i> Library
+        </a>
+        <a href="profile.html" class="dn-link">
+            <i class="fas fa-user"></i> Profile
+        </a>
+    </nav>
 </body>
 </html>

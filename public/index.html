@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <script src="csrf.js"></script>
+    <script src="escape.js"></script>
     <script src="pwa.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1791,9 +1792,9 @@ body {
             card.setAttribute('data-id', item.id);
             card.onclick = () => openDetailModal(item.id);
             card.innerHTML = `
-                <span class="season-badge">${item.season}</span>
-                <img src="${item.poster}">
-                <div class="anime-info"><b>${item.title}</b></div>
+                <span class="season-badge">${esc(item.season)}</span>
+                <img src="${esc(item.poster)}">
+                <div class="anime-info"><b>${esc(item.title)}</b></div>
             `;
             listContainer.appendChild(card);
         });
@@ -1919,13 +1920,13 @@ function selectGenreChip(element, genreValue) {
 
                 return `
                     <div style="background: #0d0e12; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start;">
-                        <img src="${c.avatar || 'https://via.placeholder.com/40'}" alt="${escapedUser}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #333; cursor:pointer;" onclick="openPublicProfile('${escapedUser}')">
+                        <img src="${safeImageUrl(c.avatar) || 'https://via.placeholder.com/40'}" alt="${escapedUser}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #333; cursor:pointer;" onclick="openPublicProfile(this.getAttribute('data-u'))" data-u="${esc(c.user)}">
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                    <strong onclick="openPublicProfile('${escapedUser}')" style="cursor: pointer; color: #fff; font-size: 13px;">@${escapedUser}</strong>
-                                    <span style="background: ${rankBg}; color: #fff; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${c.rank || 'Member'}</span>
-                                    <span style="color: #666; font-size: 11px;">${c.date || ''}</span>
+                                    <strong onclick="openPublicProfile(this.getAttribute('data-u'))" data-u="${esc(c.user)}" style="cursor: pointer; color: #fff; font-size: 13px;">@${escapedUser}</strong>
+                                    <span style="background: ${rankBg}; color: #fff; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${esc(c.rank || 'Member')}</span>
+                                    <span style="color: #666; font-size: 11px;">${esc(c.date || '')}</span>
                                 </div>
                                 ${deleteBtnHtml}
                             </div>
@@ -1977,12 +1978,13 @@ function selectGenreChip(element, genreValue) {
         document.getElementById('pub-bio').innerText = targetUser.bio || "Belum ada bio profile.";
         
         // AVATAR
-        document.getElementById('pub-avatar-img').src = targetUser.avatar || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10";
+        const pubAvatar = safeImageUrl(targetUser.avatar) || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10";
+        document.getElementById('pub-avatar-img').src = pubAvatar;
         
         // BANNER
         const pubBanner = document.getElementById('pub-banner-bg');
         if (pubBanner) {
-            pubBanner.style.backgroundImage = `url('${targetUser.banner || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800"}')`;
+            pubBanner.style.backgroundImage = `url('${safeBanner(targetUser.banner)}')`;
         }
 
         // STATS
@@ -2819,12 +2821,12 @@ function openDetailModal(animeId) {
     document.getElementById('detail-title').innerText = anime.title;
     document.getElementById('detail-season').innerText = anime.season + " • " + anime.episodes.length + " Episode";
     document.getElementById('detail-synopsis').innerText = anime.synopsis;
-    document.getElementById('detail-genres').innerHTML = anime.genres.map(g => `<span class="genre-tag">${g}</span>`).join('');
+    document.getElementById('detail-genres').innerHTML = anime.genres.map(g => `<span class="genre-tag">${esc(g)}</span>`).join('');
 
     // Mengirimkan anime.id dan index episode ke fungsi playVideo
     document.getElementById('detail-episodes').innerHTML = anime.episodes.map((ep, idx) => `
-        <div class="episode-item" onclick="playVideo('${ep.file}', '${anime.title} - ${ep.title}', ${anime.id}, ${idx})">
-            <span>${ep.title}</span>
+        <div class="episode-item" onclick="playEpisode(${anime.id}, ${idx})">
+            <span>${esc(ep.title)}</span>
             <span class="play-icon">▶ Putar</span>
         </div>
     `).join('');
@@ -2832,6 +2834,14 @@ function openDetailModal(animeId) {
     updateBookmarkButtonUI();
     updateSubscribeButtonUI();
     document.getElementById('detail-modal').style.display = 'flex';
+}
+
+function playEpisode(animeId, epIndex) {
+    const a = animeSeriesData.find(x => x.id === animeId);
+    if (!a) return;
+    const ep = (a.episodes || [])[epIndex];
+    if (!ep) return;
+    playVideo(ep.file, `${a.title} - ${ep.title}`, a.id, epIndex);
 }
 
     function closeDetailModal() { document.getElementById('detail-modal').style.display = 'none'; }
@@ -2843,8 +2853,8 @@ function openDetailModal(animeId) {
         document.getElementById('p-username').innerText = "@" + currentUser.username;
         document.getElementById('p-bio').innerText = currentUser.bio || "Belum ada bio profile.";
         
-        document.getElementById('p-avatar-img').src = currentUser.avatar || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10";
-        document.getElementById('p-banner-bg').style.backgroundImage = `url('${currentUser.banner || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800"}')`;
+        document.getElementById('p-avatar-img').src = safeImageUrl(currentUser.avatar) || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10";
+        document.getElementById('p-banner-bg').style.backgroundImage = `url('${safeBanner(currentUser.banner)}')`;
 
         document.getElementById('p-level').innerText = "Lvl " + (currentUser.level || 1);
         document.getElementById('p-rank').innerText = getRankTitle(currentUser.level || 1);
@@ -2868,10 +2878,10 @@ function openDetailModal(animeId) {
             requests.forEach(req => {
                 container.innerHTML += `
                     <div style="display:flex; justify-content:space-between; align-items:center; background:#0d0e12; padding:6px 10px; border-radius:6px; margin-bottom:6px;">
-                        <span style="color:#fff; font-size:12px;">👤 @${req.user1}</span>
+                        <span style="color:#fff; font-size:12px;">👤 @${esc(req.user1)}</span>
                         <div style="display:flex; gap:4px;">
-                            <button onclick="acceptFriend('${req.id}')" style="background:#2ed573; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Terima</button>
-                            <button onclick="rejectFriend('${req.id}')" style="background:#ff4757; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Tolak</button>
+                            <button onclick="acceptFriend(${req.id})" style="background:#2ed573; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Terima</button>
+                            <button onclick="rejectFriend(${req.id})" style="background:#ff4757; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Tolak</button>
                         </div>
                     </div>
                 `;
@@ -3220,8 +3230,8 @@ function openDetailModal(animeId) {
                     const isMe = m.from === currentUser.username;
                     return `
                         <div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? '#ff4757' : '#222'}; color: #fff; padding: 6px 10px; border-radius: 6px; max-width: 80%;">
-                            <div style="font-size: 12px;">${m.text}</div>
-                            <span style="font-size: 9px; color: #ddd; display:block; text-align:right; margin-top:2px;">${m.timestamp}</span>
+                            <div style="font-size: 12px;">${esc(m.text)}</div>
+                            <span style="font-size: 9px; color: #ddd; display:block; text-align:right; margin-top:2px;">${esc(m.timestamp)}</span>
                         </div>
                     `;
                 }).join('');
@@ -3265,13 +3275,13 @@ function openDetailModal(animeId) {
             container.innerHTML = friends.map(friend => `
                 <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1c23; padding:8px 12px; border-radius:6px; margin-bottom:6px;">
                     <!-- Klik username untuk melihat Profil -->
-                    <span style="color:#fff; font-size:13px; cursor:pointer; font-weight:bold;" onclick="openPublicProfile('${friend}')">
-                        👤 @${friend}
+                    <span style="color:#fff; font-size:13px; cursor:pointer; font-weight:bold;" onclick="openPublicProfile(this.getAttribute('data-u'))" data-u="${esc(friend)}">
+                        👤 @${esc(friend)}
                     </span>
                     <div style="display:flex; gap:6px;">
                         <!-- Klik tombol Chat untuk kirim pesan -->
-                        <button onclick="openChat('${friend}')" style="background:#70a1ff; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">💬 Chat</button>
-                        <button onclick="unfriendUser('${currentUser.username}', '${friend}')" style="background:#ff4757; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Hapus</button>
+                        <button onclick="openChat(this.getAttribute('data-u'))" data-u="${esc(friend)}" style="background:#70a1ff; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">💬 Chat</button>
+                        <button onclick="unfriendUser(this.getAttribute('data-me'), this.getAttribute('data-u'))" data-me="${esc(currentUser.username)}" data-u="${esc(friend)}" style="background:#ff4757; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Hapus</button>
                     </div>
                 </div>
             `).join('');
@@ -3336,19 +3346,19 @@ function openDetailModal(animeId) {
     
     return `
         <div style="display: flex; justify-content: space-between; align-items: center; background: #0d0e12; padding: 10px; border-radius: 6px; margin-top: 8px; border: 1px solid #333; cursor: pointer;" 
-             onclick="openPublicProfile('${u.username}')">
+             onclick="openPublicProfile(this.getAttribute('data-u'))" data-u="${esc(u.username)}">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <!-- TAMBAHKAN INI: AVATAR USER -->
-                <img src="${u.avatar || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10'}" 
+                <img src="${esc(safeImageUrl(u.avatar) || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsj0br621rFL8UEtWF6c70XWyBqNaSlAunX73Vl5RZC9FzpsYOk32-OnFP&s=10')}" 
                      style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #ff4757;">
                 <div>
-                    <b style="color: #fff;">${u.displayName || u.username}</b> 
-                    <small style="color: #888;">(@${u.username}) - ${u.role}</small>
+                    <b style="color: #fff;">${esc(u.displayName || u.username)}</b> 
+                    <small style="color: #888;">(@${esc(u.username)}) - ${esc(u.role)}</small>
                     ${statusBadge}
-                    <br><small style="color: #2ed573;">Lvl ${u.level || 1} | ${u.xp || 0} XP</small>
+                    <br><small style="color: #2ed573;">Lvl ${esc(u.level || 1)} | ${esc(u.xp || 0)} XP</small>
                 </div>
             </div>
-            ${u.username !== 'admin' ? `<button onclick="event.stopPropagation(); deleteUser('${u.username}')" style="background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Hapus User</button>` : '<span style="color: #ff4757; font-size: 12px;">Main Admin</span>'}
+            ${u.username !== 'admin' ? `<button onclick="event.stopPropagation(); deleteUser(this.getAttribute('data-u'))" data-u="${esc(u.username)}" style="background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Hapus User</button>` : '<span style="color: #ff4757; font-size: 12px;">Main Admin</span>'}
         </div>
             `;
         }).join('');
@@ -3409,10 +3419,10 @@ function loadFriendList() {
 
             container.innerHTML = friends.map(friend => `
                 <div style="display:flex; justify-content:space-between; align-items:center; background:#1a1c23; padding:8px 12px; border-radius:6px; margin-bottom:6px;">
-                    <span style="color:#fff; font-size:13px; cursor:pointer;" onclick="openPublicProfile('${friend}')">@${friend}</span>
+                    <span style="color:#fff; font-size:13px; cursor:pointer;" onclick="openPublicProfile(this.getAttribute('data-u'))" data-u="${esc(friend)}">@${esc(friend)}</span>
                     <div style="display:flex; gap:6px;">
-                        <button onclick="openChat('${friend}')" style="background:#70a1ff; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">💬 Chat</button>
-                        <button onclick="unfriendUser('${currentUser.username}', '${friend}')" style="background:#ff4757; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Hapus</button>
+                        <button onclick="openChat(this.getAttribute('data-u'))" data-u="${esc(friend)}" style="background:#70a1ff; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">💬 Chat</button>
+                        <button onclick="unfriendUser(this.getAttribute('data-me'), this.getAttribute('data-u'))" data-me="${esc(currentUser.username)}" data-u="${esc(friend)}" style="background:#ff4757; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Hapus</button>
                     </div>
                 </div>
             `).join('');
@@ -3722,10 +3732,10 @@ window.addEventListener('DOMContentLoaded', () => {
             };
 
             card.innerHTML = `
-                <img src="${item.cover}" alt="${item.title}">
+                <img src="${esc(item.cover)}" alt="${esc(item.title)}">
                 <div class="history-card-info">
-                    <strong style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</strong>
-                    <span style="color:#ff4757;">Eps ${item.lastEpisode + 1}</span>
+                    <strong style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(item.title)}</strong>
+                    <span style="color:#ff4757;">Eps ${esc(item.lastEpisode + 1)}</span>
                 </div>
             `;
             historyGrid.appendChild(card);
@@ -3763,10 +3773,10 @@ function openCatalogModal() {
 
     catalogList.innerHTML = animeSeriesData.map(anime => `
         <div style="display: flex; gap: 10px; background: #0d0e12; padding: 8px; border-radius: 6px; align-items: center; cursor: pointer;" onclick="closeModal('catalog-modal'); openDetailModal(${anime.id});">
-            <img src="${anime.poster}" style="width: 45px; height: 60px; object-fit: cover; border-radius: 4px;">
+            <img src="${esc(anime.poster)}" style="width: 45px; height: 60px; object-fit: cover; border-radius: 4px;">
             <div>
-                <b style="color: #fff; font-size: 13px; display: block;">${anime.title}</b>
-                <small style="color: #888; font-size: 11px;">${anime.season} • ${anime.episodes.length} Eps</small>
+                <b style="color: #fff; font-size: 13px; display: block;">${esc(anime.title)}</b>
+                <small style="color: #888; font-size: 11px;">${esc(anime.season)} • ${esc(anime.episodes.length)} Eps</small>
             </div>
         </div>
     `).join('');
@@ -3935,20 +3945,20 @@ async function loadBannedList() {
             <tbody>
                 ${data.map(b => `
                     <tr>
-                        <td><strong>@${b.username}</strong></td>
-                        <td>${b.displayName}</td>
-                        <td>Lvl ${b.level}</td>
+                        <td><strong>@${esc(b.username)}</strong></td>
+                        <td>${esc(b.displayName)}</td>
+                        <td>Lvl ${esc(b.level)}</td>
                         <td>
                             <span class="status-badge ${b.type === 'ban' ? 'banned' : b.isExpired ? 'expired' : 'suspended'}">
                                 ${b.type === 'ban' ? '🚫 BANNED' : b.isExpired ? '✅ Expired' : '⏳ Suspended'}
                             </span>
-                            ${b.type === 'suspend' && !b.isExpired ? `<br><small style="color:#888; font-size:9px;">Sampai ${new Date(b.until).toLocaleString('id-ID')}</small>` : ''}
+                            ${b.type === 'suspend' && !b.isExpired ? `<br><small style="color:#888; font-size:9px;">Sampai ${esc(new Date(b.until).toLocaleString('id-ID'))}</small>` : ''}
                         </td>
                         <td style="font-size:10px; color:#888;">
-                            ${b.type === 'ban' ? `Di-ban: ${new Date(b.bannedAt).toLocaleString('id-ID')}` : `Di-suspend: ${new Date(b.suspendedAt).toLocaleString('id-ID')}`}
+                            ${b.type === 'ban' ? `Di-ban: ${esc(new Date(b.bannedAt).toLocaleString('id-ID'))}` : `Di-suspend: ${esc(new Date(b.suspendedAt).toLocaleString('id-ID'))}`}
                         </td>
                         <td>
-                            <button onclick="quickUnban('${b.username}')" style="background:#2ed573; color:#000; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:10px;">Unban</button>
+                            <button onclick="quickUnban(this.getAttribute('data-u'))" data-u="${esc(b.username)}" style="background:#2ed573; color:#000; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:10px;">Unban</button>
                         </td>
                     </tr>
                 `).join('')}
